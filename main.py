@@ -1,6 +1,6 @@
 import cv2
 
-from donefunctions import SURFalignment, meanEdgeRGB, doClaheLAB2, limitLchannel, crop, doClaheLAB1, resizeImg
+from Kasperfunctions import SURFalignment, meanEdgeRGB, doClaheLAB2, limitLchannel, crop, doClaheLAB1, resizeImg
 
 # load image
 fisk = cv2.imread('fishpics/direct2pic\\GOPR1591.JPG', 1)
@@ -11,7 +11,7 @@ top = crop(top, 650,500,1000,3000)
 bund = cv2.imread('fishpics/direct2pic\\GOPR1590.JPG', 1)
 bund = crop(bund, 650,500,1000,3000)
 
-edge1 = cv2.imread('fishpics/direct2pic', 1)
+edge1 = cv2.imread('fishpics/edgeFisk.png', 1)
 
 meanEdgeRGB(edge1)
 
