@@ -2,26 +2,31 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-def normHistEqualizeHLS(img):
-    """
-        Performs histogram equalization on images
 
-        Input images must be BGR
-    """
-    fiskHLS = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    LChannel = fiskHLS[:,:,1]
+def doClaheLAB2(null):
+    global val2, kernel
+    val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
+    if val2 <= 1:
+        val2 = 2
+    kernel = (val2,val2)
+    res = claheHSL(img, val1/10,kernel)
+    cv2.imshow("ResultHLS", res)
+    plt.hist(res.ravel(), 256, [0, 256]);
+    plt.hist(res.ravel(), 256, [0, 256]);
+    plt.show()
+    cv2.waitKey(0)
+
+
+def normHistEqualizeHLS(img):
+    fiskHLS1 = img
+    LChannel = fiskHLS1[:,:,1]
     HistEqualize = cv2.equalizeHist(LChannel)
-    fiskHLS[:,:,1] = HistEqualize
-    fiskNomrHistEq = cv2.cvtColor(fiskHLS,cv2.COLOR_HLS2BGR)
+    fiskHLS1[:,:,1] = HistEqualize
+    fiskNomrHistEq = cv2.cvtColor(fiskHLS1,cv2.COLOR_HLS2BGR)
     return fiskNomrHistEq
 
 
 def claheHSL(img,clipLimit,tileGridSize):
-    """
-        Performs CLAHE on images
-
-        Input images must be BGR
-    """
     fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     LChannelHLS = fiskHLS2[:, :, 1]
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
@@ -32,11 +37,6 @@ def claheHSL(img,clipLimit,tileGridSize):
 
 
 def claheLAB(img,clipLimit,tileGridSize):
-    """
-    Performs CLAHE on images
-
-    Input images must be BGR
-    """
     fiskLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     LChannelLAB = fiskLAB[:, :, 0]
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
@@ -47,14 +47,9 @@ def claheLAB(img,clipLimit,tileGridSize):
 
 
 def limitLchannel(img, limit):
-    """
-    Sets a limit on the light channel in a HSL version of input image
-    """
-
     max = 0
     imgHLS = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     height, width, channels = imgHLS.shape
-
     # Creating new empty image
     newLchannel = np.zeros((height, width), dtype=np.uint8)
     for y in range(height):
@@ -68,19 +63,16 @@ def limitLchannel(img, limit):
                 newLchannel.itemset((y, x), imgHLS.item(y, x, 1))
     imgHLS[:, :, 1] = newLchannel
     imgHLS = cv2.cvtColor(imgHLS, cv2.COLOR_HLS2BGR)
+    print(max)
     return imgHLS
 
+
 def crop(img,y,x,height,width):
-    """
-    Crops images
-    """
     ROI = img[y:y + height, x:x + width]
     return ROI
 
+
 def doClaheLAB1(null):
-    """
-    Creates slider for performing CLAHE
-    """
     global val1
     val1 = cv2.getTrackbarPos('cliplimit', 'ResultHLS')
     res = claheHSL(img, val1/10,kernel)
@@ -89,27 +81,8 @@ def doClaheLAB1(null):
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.show()
 
-def doClaheLAB2(null):
-    """
-    Creates slider for performing CLAHE
-    """
-    global val2, kernel
-    val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
-    if val2 <= 1:
-        val2 = 2
-    kernel = (val2, val2)
-    res = claheHSL(img, val1 / 10, kernel)
-    cv2.imshow("ResultHLS", res)
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.show()
-    cv2.waitKey(0)
-
 
 def resizeImg(img, scale_percent):
-    """
-        Resizes images with a scale percentage
-    """
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
@@ -118,13 +91,7 @@ def resizeImg(img, scale_percent):
     # resize image
     return resized
 
-def meanEdgeRGB(img, middleYValue):
-    """
-        Finds the mean RGB values of the edge of fish in a .png image
-
-        middleYValue: The y value of the line that separates the back and belly region of the fish
-    """
-
+def meanEdgeRGB(img):
     cv2.imshow('img', img)
     cv2.waitKey(0)
 
@@ -167,30 +134,30 @@ def meanEdgeRGB(img, middleYValue):
                 if res.item(y,x,0) > 0:
                     blue = blue + res.item(y,x,0)
                     i = i + 1
-                    if y >= middleYValue:
+                    if y >= 130:
                         bellyBlue = bellyBlue + res.item(y,x,0)
                         bi = bi + 1
-                    if y < middleYValue:
+                    if y < 130:
                         backBlue = backBlue + res.item(y, x, 0)
                         bki = bki + 1
 
                 if res.item(y,x,1) > 0:
                     green = green + res.item(y,x,1)
                     u = u + 1
-                    if y >= middleYValue:
+                    if y >= 130:
                         bellyGreen = bellyGreen + res.item(y,x,1)
                         bu = bu + 1
-                    if y < middleYValue:
+                    if y < 130:
                         backGreen = backGreen + res.item(y, x, 1)
                         bku = bku + 1
 
                 if res.item(y,x,2) > 0:
                     red = red + res.item(y,x,2)
                     k = k + 1
-                    if y >= middleYValue:
+                    if y >= 130:
                         bellyRed = bellyRed + res.item(y, x, 2)
                         bk = bk + 1
-                    if y < middleYValue:
+                    if y < 130:
                         backRed = backRed + res.item(y, x, 2)
                         bkk = bkk + 1
 
@@ -219,11 +186,8 @@ def meanEdgeRGB(img, middleYValue):
     print('mean green back: ', meanGreenBack)
     print('mean red back: ', meanRedBack)
 
+# SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
 def SURFalignment(img1, img2):
-    """
-    # SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
-    """
-
     img1Gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
     img2Gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
