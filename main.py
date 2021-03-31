@@ -14,7 +14,7 @@ right_crop = crop(right, 650, 500, 1000, 3000)
 right_re = resizeImg(right_crop, 30)
 right_eq = equalizeColoredImage(right_re)
 
-replaceHighlights(left_eq, right_eq, 220)
+replaceHighlights(left_eq, right_eq, 215, 100)
 
 # display image
 cv2.imshow("left", left_eq)

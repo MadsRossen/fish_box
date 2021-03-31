@@ -2,13 +2,14 @@ import cv2
 import numpy as np
 
 
-def replaceHighlights(main_img, spec_img, limit):
+def replaceHighlights(main_img, spec_img, limit, lowerLimit):
     '''
     This functions replaces the highlights from a main picture with the pixels from a specular image pixels
 
     :param main_img: The image of which will get the pixels replaced with the specular image
     :param spec_img: The image of which will be used to replace the pixels of the main image
     :param limit: The limits of a pixel value before it is classified as a specular highlight
+    :param lowerLimit: The limits of a pixel value before it is classified as a dark area
     :return: The image that has the highlights replaced
     '''
 
@@ -16,16 +17,21 @@ def replaceHighlights(main_img, spec_img, limit):
     img_main_cop = np.copy(main_img)
 
     # Isolate the areas where the color is white
+
     main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
                              (img_main_cop[:, :, 2] >= limit))
 
-    print(main_img_spec)
-
-    # Replace pixels with
+    # Replace pixels with pixel in other image
     img_main_cop[main_img_spec] = spec_img[main_img_spec]
 
-    cv2.imshow("spec", img_main_cop)
+    # Isolate the areas where the color is dark
+    main_img_dark = np.where((img_main_cop[:, :, 0] <= lowerLimit) & (img_main_cop[:, :, 1] <= lowerLimit) &
+                             (img_main_cop[:, :, 2] <= lowerLimit))
 
+    # Replace pixels with pixel in other image
+    img_main_cop[main_img_dark] = spec_img[main_img_dark]
+
+    cv2.imshow("spec", img_main_cop)
 
 def equalizeColoredImage(img):
     '''

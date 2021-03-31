@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 def doClaheLAB2(null):
     global val2, kernel
     val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
@@ -15,7 +14,6 @@ def doClaheLAB2(null):
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.show()
     cv2.waitKey(0)
-
 
 def normHistEqualizeHLS(img):
     fiskHLS1 = img
@@ -35,7 +33,6 @@ def claheHSL(img,clipLimit,tileGridSize):
     fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
     return fiskClahe
 
-
 def claheLAB(img,clipLimit,tileGridSize):
     fiskLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     LChannelLAB = fiskLAB[:, :, 0]
@@ -44,7 +41,6 @@ def claheLAB(img,clipLimit,tileGridSize):
     fiskLAB[:, :, 0] = claheLchannel1
     fiskClaheLAB = cv2.cvtColor(fiskLAB, cv2.COLOR_LAB2BGR)
     return fiskClaheLAB
-
 
 def limitLchannel(img, limit):
     max = 0
@@ -66,11 +62,9 @@ def limitLchannel(img, limit):
     print(max)
     return imgHLS
 
-
 def crop(img,y,x,height,width):
     ROI = img[y:y + height, x:x + width]
     return ROI
-
 
 def doClaheLAB1(null):
     global val1
@@ -80,7 +74,6 @@ def doClaheLAB1(null):
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.show()
-
 
 def resizeImg(img, scale_percent):
     width = int(img.shape[1] * scale_percent / 100)
