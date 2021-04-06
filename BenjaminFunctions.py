@@ -1,5 +1,51 @@
 import cv2
 import numpy as np
+import os
+
+from Kasperfunctions import resizeImg, crop
+
+
+def loadImages(edit_images, scaling_percentage=20):
+    '''
+    Loads all the images inside a file.
+
+    :return: All the images in a list and its file names.
+    '''
+    path = "direct2pic"
+    images = []
+    class_names = []
+    img_list = os.listdir(path)
+    print("Total images found", len(img_list))
+
+    for cl in img_list:
+        # Find all the images in the file and save them in a list without the ".jpg"
+        cur_img = cv2.imread(f"{path}/{cl}", 0)
+
+        # Do some quick images processing to get better pictures if the user wants to
+        cur_img_re_gray_norm = None
+        if edit_images:
+            cur_img_crop = crop(cur_img, 650, 500, 1000, 3000)
+            cur_img_re = resizeImg(cur_img_crop, scaling_percentage)
+            cur_img_re_gray_norm = cv2.equalizeHist(cur_img_re)
+
+            # Show the image before we append it, to make sure it is read correctly
+            if cur_img_re_gray_norm is not None:
+                print("Showing normal image.")
+                cv2.imshow("image", cur_img)
+            else:
+                print("Showing equalized image.")
+                cv2.imshow("image", cur_img_re_gray_norm)
+
+        cv2.waitKey(0)
+
+        # Append them into the list
+        images.append(cur_img_re_gray_norm)
+        class_names.append(os.path.splitext(cl)[0])
+
+    # Remove the image window after we have checked all the pictures
+    cv2.destroyAllWindows()
+
+    return images, class_names
 
 
 def replaceHighlights(main_img, spec_img, limit):
@@ -19,12 +65,10 @@ def replaceHighlights(main_img, spec_img, limit):
     main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
                              (img_main_cop[:, :, 2] >= limit))
 
-    print(main_img_spec)
-
-    # Replace pixels with
+    # Replace pixels
     img_main_cop[main_img_spec] = spec_img[main_img_spec]
 
-    cv2.imshow("spec", img_main_cop)
+    return img_main_cop
 
 
 def equalizeColoredImage(img):
@@ -44,3 +88,30 @@ def equalizeColoredImage(img):
     img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
 
     return img_output
+
+
+def morphological_trans(mask):
+    kernel = np.ones((2, 2), np.uint8)
+    dilation = cv2.dilate(mask, kernel, iterations=1)
+
+    return dilation
+
+
+def find_blood_damage(img):
+    '''
+    Returns the mask of the found blood damage
+
+    :param img: Image to check for blood spots
+    :return: The mask of blood damage
+    '''
+
+    # Bounds for the red in the wound, use gimp to find the right values
+    lower_red = np.array([0, 90, 90])
+    upper_red = np.array([7, 100, 100])
+
+    # Convert to hsv, check for red and return the found mask
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, lower_red, upper_red)
+
+    return mask
+
