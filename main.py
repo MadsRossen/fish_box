@@ -1,55 +1,29 @@
 import cv2
 
-from Kasperfunctions import SURFalignment, meanEdgeRGB, doClaheLAB2, limitLchannel, crop, doClaheLAB1, resizeImg
+from Kasperfunctions import crop, resizeImg
+from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
+     loadImages
 
-# load image
-fisk = cv2.imread('fishpics/direct2pic\\GOPR1591.JPG', 1)
+# load images into memory
+images, names = loadImages(True, 40)
 
-top = cv2.imread('fishpics/direct2pic\\GOPR1591.JPG', 1)
-top = crop(top, 650,500,1000,3000)
+left = images[0]
+right = images[1]
 
-bund = cv2.imread('fishpics/direct2pic\\GOPR1590.JPG', 1)
-bund = crop(bund, 650,500,1000,3000)
+# Specular highlights
+img_spec_rem = replaceHighlights(left, right, 210)
 
-edge1 = cv2.imread('fishpics/edgeFisk.png', 1)
+# Blood spots
+blood_spot = find_blood_damage(img_spec_rem)
+morph = morphological_trans(blood_spot)
 
-meanEdgeRGB(edge1)
+# Convert morph to color so we can add it together with our main image
+morph_color = cv2.cvtColor(morph, cv2.COLOR_GRAY2BGR)
+final = cv2.addWeighted(img_spec_rem, 1, morph_color, 0.6, 0)
 
-SURFalignment(top,bund)
-
-fisk = resizeImg(fisk, 70)
-
-y = 410
-x = 500
-h = 800
-w = 1000
-
-fiskROI = crop(fisk, y, x, h, w)
-cv2.imshow('fiskROI',fiskROI)
-cv2.waitKey(0)
-
-val1 = 0
-val2 = 1
-kernel = (1,1)
-
-removeSpcHighTest = limitLchannel(fiskROI, 150)
-cv2.imshow('removeSpcHighTest',removeSpcHighTest)
-cv2.waitKey(0)
-
-# Load image that will be performed CLAHE on
-img = removeSpcHighTest
-
-# create window and add trackbar
-cv2.namedWindow('ResultHLS')
-
-global maxCliplimit, maxTilesize
-maxCliplimit = 100 # Is devided by 10 in output
-maxTilesize = 100
-
-cv2.createTrackbar('cliplimit','ResultHLS', 1, maxCliplimit, doClaheLAB1)
-cv2.createTrackbar('tilesize','ResultHLS', 2, maxTilesize, doClaheLAB2)
-
-# display image
-cv2.imshow("ResultHLS", img)
+# display images and it's names
+cv2.imshow(f"Left: {names[0]}", left)
+cv2.imshow(f"Right: {names[1]}", right)
+cv2.imshow("Final", final)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

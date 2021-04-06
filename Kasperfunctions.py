@@ -3,7 +3,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-
 def doClaheLAB2(null):
     global val2, kernel
     val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
