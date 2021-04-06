@@ -5,13 +5,13 @@ import os
 from Kasperfunctions import resizeImg, crop
 
 
-def loadImages(edit_images, scaling_percentage=20):
+def loadImages(edit_images, scaling_percentage=30):
     '''
     Loads all the images inside a file.
 
     :return: All the images in a list and its file names.
     '''
-    path = "direct2pic"
+    path = "fishpics/direct2pic"
     images = []
     class_names = []
     img_list = os.listdir(path)
@@ -19,28 +19,22 @@ def loadImages(edit_images, scaling_percentage=20):
 
     for cl in img_list:
         # Find all the images in the file and save them in a list without the ".jpg"
-        cur_img = cv2.imread(f"{path}/{cl}", 0)
+        cur_img = cv2.imread(f"{path}/{cl}", 1)
 
         # Do some quick images processing to get better pictures if the user wants to
-        cur_img_re_gray_norm = None
         if edit_images:
             cur_img_crop = crop(cur_img, 650, 500, 1000, 3000)
             cur_img_re = resizeImg(cur_img_crop, scaling_percentage)
-            cur_img_re_gray_norm = cv2.equalizeHist(cur_img_re)
+            cur_img = cur_img_re
 
-            # Show the image before we append it, to make sure it is read correctly
-            if cur_img_re_gray_norm is not None:
-                print("Showing normal image.")
-                cv2.imshow("image", cur_img)
-            else:
-                print("Showing equalized image.")
-                cv2.imshow("image", cur_img_re_gray_norm)
-
+        # Show the image before we append it, to make sure it is read correctly
+        img_name = os.path.splitext(cl)[0]
+        cv2.imshow(f"Loaded image: {img_name}", cur_img)
         cv2.waitKey(0)
 
         # Append them into the list
-        images.append(cur_img_re_gray_norm)
-        class_names.append(os.path.splitext(cl)[0])
+        images.append(cur_img)
+        class_names.append(img_name)
 
     # Remove the image window after we have checked all the pictures
     cv2.destroyAllWindows()
