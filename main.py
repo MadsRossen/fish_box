@@ -1,17 +1,29 @@
 import cv2
 
-from Kasperfunctions import crop, resizeImg
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
-     loadImages
+     loadImages, checkerboard_calibrate, find_contours, isolate_img
 
 # load images into memory
-images, names = loadImages(True, 40)
+images, names = loadImages("fishpics/direct2pic", True, True, 40)
 
-left = images[0]
-right = images[1]
+# Calibrate images
+img_cali, names_cali = loadImages("fishpics/CheckerBoards", True, False, 40)
+
+# Calibrate camera
+fish_cali = checkerboard_calibrate(images, img_cali)
+
+# Calibrated fish images
+left = fish_cali[0]
+right = fish_cali[1]
+
+# HSV changer
+# isolate_img(left)
 
 # Specular highlights
-img_spec_rem = replaceHighlights(left, right, 210)
+img_spec_rem = replaceHighlights(left, right, 225)  # 230
+
+# Get the contours
+find_contours(fish_cali)
 
 # Blood spots
 blood_spot = find_blood_damage(img_spec_rem)
