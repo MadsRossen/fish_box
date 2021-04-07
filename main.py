@@ -3,15 +3,20 @@ import cv2
 from Kasperfunctions import crop, resizeImg
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
      loadImages
+from mathias_functions import isolate_img
 
 # load images into memory
-images, names = loadImages(True, 40)
+images, names = loadImages(True, 10)
 
 left = images[0]
 right = images[1]
 
 # Specular highlights
 img_spec_rem = replaceHighlights(left, right, 210)
+
+# isolate image
+
+isolated_img = isolate_img(images)
 
 # Blood spots
 blood_spot = find_blood_damage(img_spec_rem)

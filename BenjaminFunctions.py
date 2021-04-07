@@ -4,7 +4,7 @@ import os
 
 from Kasperfunctions import resizeImg, crop
 
-q
+
 def loadImages(edit_images, scaling_percentage=30):
     '''
     Loads all the images inside a file.
