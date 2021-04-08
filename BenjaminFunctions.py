@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
 import os
-import specularity_removal as sr
 import math
-import glob
+import warnings
 
-from Kasperfunctions import resizeImg, crop
+from matplotlib import pyplot as plt
+
+from Kasperfunctions import resizeImg
 
 # A library that has a equalize matcher!
 from skimage.exposure import match_histograms
@@ -159,13 +160,18 @@ def cropToROI(orig_img, contours):
     :return: (xcm, ycm) array with the (x,y) coordinates for the contours center of mass. crop_img: array of the cropped images (one image for each contour)
     '''
 
-    height, width = orig_img.shape[:2]
+    height = []
+    width = []
+    for n in orig_img:
+        height.append(n.shape[0])
+        width.append(n.shape[1])
+
     xcm = []
     ycm = []
     crop_img = []
     for nr in range(len(contours)):
-        ymax, ymin = 0, height
-        xmax, xmin = 0, width
+        ymax, ymin = 0, height[nr]
+        xmax, xmin = 0, width[nr]
         for point in range(len(contours[nr])):
             if contours[nr][point][0][0] > xmax:
                 xmax = contours[nr][point][0][0]
@@ -180,44 +186,80 @@ def cropToROI(orig_img, contours):
         # (Page 109 Eq: 7.3 and 7.4)
         xcm.append(int((xmin+xmax)/2))
         ycm.append(int((ymin+ymax)/2))
-        crop_img.append(orig_img[ymin-50:ymax+50, xmin-50:xmax+50])
+        #crop_img.append(orig_img[nr][ymin-50:ymax+50, xmin-50:xmax+50])
         #rsize = 6
         #crop_img[nr] = cv2.resize(crop_img[nr], (rsize, rsize))
-    return xcm, ycm, crop_img
+    return xcm, ycm
+
+
+def find_biggest_contour(cnt):
+    biggest_area = 0
+    biggest_cnt = None
+    for n in cnt:
+        if cv2.contourArea(n) > biggest_area:
+            biggest_cnt = n
+        else:
+            continue
+
+    return biggest_cnt
 
 
 def find_contours(images):
     # Bounds for the fish
-    lower = np.array([0, 0, 16])
-    upper = np.array([61, 176, 255])
-    kernel = np.ones((6, 6), np.uint8)
+    lower = np.array([0, 16, 16])
+    upper = np.array([94, 255, 255])
 
     def nothing(x):
         pass
 
     cv2.namedWindow("Adjust_Hue_Satuation_Value")
-    cv2.createTrackbar("kernel", "Adjust_Hue_Satuation_Value", 0, 10, nothing)
+    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 1, 20, nothing)
+    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 1, 20, nothing)
 
     contours = []
     for n in images:
         while True:
-            kernel_val = cv2.getTrackbarPos("kernel", "Adjust_Hue_Satuation_Value")
-            kernel = np.ones((kernel_val, kernel_val), np.uint8)
+            kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+            kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+
+            if kernel_val_open_val == 0:
+                kernel_val_open_val = 1
+            if kernel_val_close_val == 0:
+                kernel_val_close_val = 1
+
+            # Make kernels for each morph type
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
+            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
+
             # Convert to hsv, check for red and return the found mask
             hsv = cv2.cvtColor(n, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv, lower, upper)
 
             # Morphology
-            opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-            closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+            opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
+            closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel_close)
 
-            cv2.imshow("Mask", closing)
+            # To see how much of the fish we are keeping
+            if closing is not None:
+                res = cv2.bitwise_and(n, n, mask=closing)
+
+            cv2.imshow("Adjust_Hue_Satuation_Value", closing)
+            cv2.imshow("Res", res)
 
             key = cv2.waitKey(1)
             if key == 27:
                 break
 
-        contours.append(mask)
+        # Find contours
+        contours, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+        # Getting the biggest contour which is always the fish
+        if contours is not None:
+            contours.append(find_biggest_contour(contours))
+        else:
+            print("Can't find contour")
+
+    return contours
 
 
 def rotateImages(img, rotate_img, xcm, ycm, contours):
@@ -261,40 +303,54 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
             if data[nr]["length"][point] > maxLength:
                 maxLength = data[nr]["length"][point]
                 angleMaxLength = data[nr]["angle"][point]
-            # Draw the line tracing on the contours (optional)
-            cv2.line(img, (xcm[nr], ycm[nr]), (contours[nr][point][0][0], contours[nr][point][0][1]), (255, 0, 0), 1)
+            # Draw the line tracing on the contours and point (optional)
+            cv2.line(rotate_img[nr], (xcm[nr], ycm[nr]), (contours[nr][point][0][0], contours[nr][point][0][1]),
+                     (255, 0, 0), 1)
         # Rotating the images so the longest part of the resistor has an angle of 0 relative to the positive x-axis.
-        if angleMaxLength != 0:
+        '''if angleMaxLength != 0:
             (height, width) = rotate_img[nr].shape[:2]
             (cX, cY) = (width // 2, height // 2)
             M = cv2.getRotationMatrix2D((cX, cY), angleMaxLength, 1.0)
             img_output.append(cv2.warpAffine(rotate_img[nr], M, (width, height), borderValue=(0, 128, 128)))
         else:
-            img_output.append(rotate_img[nr])
-        resize = 600
-        img_output[nr] = cv2.resize(img_output[nr], (resize, resize))
+            img_output.append(rotate_img[nr])'''
+        # Show COF contour
+        cv2.circle(rotate_img[nr], (xcm[nr], ycm[nr]), radius=4, color=(0, 0, 255), thickness=-1)
+
         # Plot the contour coordinates length relative to the angle (optional):
-        """plt.subplot(int("1" + str(len(contours)) + str(nr + 1)))
+        plt.subplot(int("1" + str(len(contours)) + str(nr + 1)))
         plt.bar(data[nr]["angle"], data[nr]["length"])
-        plt.axis([-180, 180, 0, 100])
-    plt.show()"""
-    return img_output
+        plt.axis([-180, 180, 0, 500])
+    plt.show()
+    return rotate_img
 
 
 def checkerboard_calibrate(images_distort, images_checkerboard):
+    '''
+    Undistorts images by a checkerboard calibration.
+
+    :param images_distort: The images the needs to be undistorted
+    :param images_checkerboard: The images of the checkerboard to calibrate by
+    :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
+    '''
     print("Started calibrating...")
+
     # termination criteria
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
+
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((9 * 6, 3), np.float32)
     objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
+
     # Arrays to store object points and image points from all the images.
     objpoints = []  # 3d point in real world space
     imgpoints = []  # 2d points in image plane.
     for img in images_checkerboard:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
+
         # If found, add object points, image points (after refining them)
         if ret is True:
             objpoints.append(objp)
@@ -305,25 +361,47 @@ def checkerboard_calibrate(images_distort, images_checkerboard):
             cv2.imshow('img', img)
             cv2.waitKey(0)
         else:
-            print("No ret")
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-    print(ret, mtx, dist, rvecs, tvecs)
-    print(imgpoints)
-    print(objpoints)
-    img_undst = []
-    for n in images_distort:
-        h, w = n.shape[:2]
-        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-        # undistort
-        dst = cv2.undistort(n, mtx, dist, None, newcameramtx)
-        # crop the image
-        x, y, w, h = roi
-        dst = dst[y:y + h, x:x + w]
-        img_undst.append(dst)
-        cv2.imshow('calibresult.png', dst)
-        cv2.waitKey(0)
-        print("Done calibrating")
-    return img_undst
+            warnings.warn("No ret! This might lead to a crash.")
+    # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
+    try:
+        # Calibrate the camera
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+        # Go through all the images and undistort them
+        img_undst = []
+        for n in images_distort:
+            h, w = n.shape[:2]
+            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+
+            # undistorted
+            mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
+            dst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
+
+            # crop the image
+            x, y, w, h = roi
+            dst = dst[y:y + h, x:x + w]
+            img_undst.append(dst)
+            cv2.imshow('calibresult.png', dst)
+            cv2.waitKey(0)
+
+            print("Done calibrating")
+
+        return img_undst
+    except:
+        # If the calibration fails, inform us and tell us the error
+        warnings.warn("Could not calibrate camera. Check images.")
+        mean_error = 0
+        tot_error = 0
+
+        for i in range(len(objpoints)):
+            imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+            error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+            tot_error += error
+
+        print("total error: ", mean_error / len(objpoints))
+
+        # If the function fails, return the input arguments
+        return images_distort
 
 
 ### MATHIAS FUNCTIONS ###
