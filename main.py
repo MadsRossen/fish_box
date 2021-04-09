@@ -20,8 +20,10 @@ img_spec_rem = [bf.replaceHighlights(left, right, 225), bf.replaceHighlights(rig
 # Get the contours
 contour = bf.find_contours(img_spec_rem)
 
+# Find contours middle point
 xcm, ycm = bf.cropToROI(img_spec_rem, contour)
 
+# Raytracing
 rot_img = bf.rotateImages(left, img_spec_rem, xcm, ycm, contour)
 
 # display images and it's names
