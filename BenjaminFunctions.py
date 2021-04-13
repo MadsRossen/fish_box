@@ -3,6 +3,7 @@ import numpy as np
 import os
 import math
 import warnings
+import extremeImageProcessing as eip
 
 from matplotlib import pyplot as plt
 
@@ -13,11 +14,11 @@ from skimage.exposure import match_histograms
 
 
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
-    '''
+    """
     Loads all the images inside a file.
 
     :return: All the images in a list and its file names.
-    '''
+    """
 
     images = []
     class_names = []
@@ -31,7 +32,6 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
         # Do some quick images processing to get better pictures if the user wants to
         if edit_images:
-            #cur_img_crop = crop(cur_img, 650, 500, 1000, 3000)
             cur_img_re = resizeImg(cur_img, scaling_percentage)
             cur_img = cur_img_re
 
@@ -52,18 +52,18 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
 
 def replaceHighlights(main_img, spec_img, limit):
-    '''
-    This functions replaces the highlights from a main picture with the pixels from a specular image pixels
+    """
+    This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
 
     :param main_img: The image of which will get the pixels replaced with the specular image
     :param spec_img: The image of which will be used to replace the pixels of the main image
     :param limit: The limits of a pixel value before it is classified as a specular highlight
     :return: The image that has the highlights replaced
-    '''
+    """
 
     # Create copy
     img_main_cop = np.copy(main_img)
-    img_spec_cop = np.zeros((spec_img.shape[0],spec_img.shape[1],3), np.uint8)
+    img_spec_cop = np.zeros((spec_img.shape[0], spec_img.shape[1], 3), np.uint8)
 
     # Isolate the areas where the color is white
     main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
@@ -89,54 +89,6 @@ def replaceHighlights(main_img, spec_img, limit):
     cv2.destroyAllWindows()
 
     return img_main_cop
-
-
-def equalizeColoredImage(img):
-    '''
-    This function returns the equalized image of a color image using YUV
-
-    :param img: The image to equalize
-    :return: Equalized image
-    '''
-    # Turn into YUV
-    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-
-    # equalize the histogram of the Y channel
-    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-
-    # convert the YUV image back to RGB format
-    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-
-    return img_output
-
-
-def morphological_trans(mask):
-    kernel = np.ones((2, 2), np.uint8)
-    dilation = cv2.dilate(mask, kernel, iterations=1)
-
-    return dilation
-
-
-def find_blood_damage(img):
-    '''
-    Returns the mask of the found blood damage
-
-    :param img: Image to check for blood spots
-    :return: The mask of blood damage
-    '''
-
-    # Bounds for the red in the wound, use gimp to find the right values
-    lower_red = np.array([0, 90, 90])
-    upper_red = np.array([7, 100, 100])
-
-    # Convert to hsv, check for red and return the found mask
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, lower_red, upper_red)
-
-    return mask
-
-
-### KAJ FUNCTIONS ###
 
 def createDict():
     '''
@@ -168,7 +120,6 @@ def cropToROI(orig_img, contours):
 
     xcm = []
     ycm = []
-    crop_img = []
     for nr in range(len(contours)):
         ymax, ymin = 0, height[nr]
         xmax, xmin = 0, width[nr]
@@ -186,13 +137,16 @@ def cropToROI(orig_img, contours):
         # (Page 109 Eq: 7.3 and 7.4)
         xcm.append(int((xmin+xmax)/2))
         ycm.append(int((ymin+ymax)/2))
-        #crop_img.append(orig_img[nr][ymin-50:ymax+50, xmin-50:xmax+50])
-        #rsize = 6
-        #crop_img[nr] = cv2.resize(crop_img[nr], (rsize, rsize))
     return xcm, ycm
 
 
 def find_biggest_contour(cnt):
+    """
+    Returns the biggest contour in a list of contours.
+
+    :param cnt: A list of contours
+    :return: The biggest contour inside the list
+    """
     biggest_area = 0
     biggest_cnt = None
     for n in cnt:
@@ -204,10 +158,13 @@ def find_biggest_contour(cnt):
     return biggest_cnt
 
 
-def find_contours(images):
-    # Bounds for the fish
-    lower = np.array([0, 16, 16])
-    upper = np.array([94, 255, 255])
+def find_contours(masks, images):
+    """
+    Returns the biggest contour for a list of images.
+
+    :param images: A list of images to find contours inside
+    :return: A list with the biggest contour for each image
+    """
 
     def nothing(x):
         pass
@@ -217,11 +174,13 @@ def find_contours(images):
     cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 1, 20, nothing)
 
     contours = []
-    for n in images:
+    image_n = 0
+    for n in masks:
         while True:
             kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
             kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
 
+            # Find a better method than this
             if kernel_val_open_val == 0:
                 kernel_val_open_val = 1
             if kernel_val_close_val == 0:
@@ -231,17 +190,16 @@ def find_contours(images):
             kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
             kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
 
-            # Convert to hsv, check for red and return the found mask
-            hsv = cv2.cvtColor(n, cv2.COLOR_BGR2HSV)
-            mask = cv2.inRange(hsv, lower, upper)
-
             # Morphology
-            opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
+            opening = cv2.morphologyEx(n, cv2.MORPH_OPEN, kernel_open)
             closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel_close)
+
+            # To get a single channel, maybe make a bit image instead
+            closed_gray = grayScaling(closing)
 
             # To see how much of the fish we are keeping
             if closing is not None:
-                res = cv2.bitwise_and(n, n, mask=closing)
+                res = eip.bitwise_and(images[image_n], closed_gray)
 
             cv2.imshow("Adjust_Hue_Satuation_Value", closing)
             cv2.imshow("Res", res)
@@ -251,7 +209,7 @@ def find_contours(images):
                 break
 
         # Find contours
-        contours, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv2.findContours(closed_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # Getting the biggest contour which is always the fish
         if contours is not None:
@@ -259,11 +217,14 @@ def find_contours(images):
         else:
             print("Can't find contour")
 
+        # Increment the image number so we have the right bitwise
+        image_n = image_n + 1
+
     return contours
 
 
-def rotateImages(img, rotate_img, xcm, ycm, contours):
-    '''
+def rotateImages(rotate_img, xcm, ycm, contours):
+    """
     A function that can rotate a set of images, so the longest part has an angle of zero relative to the
     positive x-axis. This is done by line tracing each point on the contours relative to
     the center of mass of the contours. The angle for each line relative to the positive
@@ -276,13 +237,12 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
     It is also possible to plot the distribution of the contour coordinates length
     relative to the angle (line 174-177 should then be included).
 
-    :param img: Image that you want the line tracing to be drawn upon.
     :param rotate_img: Images that needs to be rotated.
-    :param xcm: x-coordinates for the center of mass of the contours
-    :param ycm: y-coordinates for the center of mass of the contours
+    :param xcm: x-coordinates for the center of mass of the contours.
+    :param ycm: y-coordinates for the center of mass of the contours.
     :param contours: Contours from the images that needs to be rotated.
     :return: The rotated images.
-    '''
+    """
 
     # Variable where the length and angle will be stored.
     data = []
@@ -290,7 +250,6 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
     img_output = []
     for nr in range(len(contours)):
         maxLength = 0
-        angleMaxLength = 0
         data.append(createDict())
         for point in range(len(contours[nr])):
             # Compute x and y coordinate relative to the contours center of mass.
@@ -302,18 +261,10 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
             # Finding the longest length and at what angle.
             if data[nr]["length"][point] > maxLength:
                 maxLength = data[nr]["length"][point]
-                angleMaxLength = data[nr]["angle"][point]
             # Draw the line tracing on the contours and point (optional)
             cv2.line(rotate_img[nr], (xcm[nr], ycm[nr]), (contours[nr][point][0][0], contours[nr][point][0][1]),
                      (255, 0, 0), 1)
-        # Rotating the images so the longest part of the resistor has an angle of 0 relative to the positive x-axis.
-        '''if angleMaxLength != 0:
-            (height, width) = rotate_img[nr].shape[:2]
-            (cX, cY) = (width // 2, height // 2)
-            M = cv2.getRotationMatrix2D((cX, cY), angleMaxLength, 1.0)
-            img_output.append(cv2.warpAffine(rotate_img[nr], M, (width, height), borderValue=(0, 128, 128)))
-        else:
-            img_output.append(rotate_img[nr])'''
+
         # Show COF contour
         cv2.circle(rotate_img[nr], (xcm[nr], ycm[nr]), radius=4, color=(0, 0, 255), thickness=-1)
 
@@ -321,32 +272,36 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
         plt.subplot(int("1" + str(len(contours)) + str(nr + 1)))
         plt.bar(data[nr]["angle"], data[nr]["length"])
         plt.axis([-180, 180, 0, 500])
+
     plt.show()
     return rotate_img
 
 
-def checkerboard_calibrate(images_distort, images_checkerboard):
-    '''
+def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show_img=False):
+    """
     Undistorts images by a checkerboard calibration.
 
+    :param show_img: Debug to see if all the images are loaded and all the edges are found
+    :param dimensions: The dimensions of the checkerboard from a YAML file
     :param images_distort: The images the needs to be undistorted
     :param images_checkerboard: The images of the checkerboard to calibrate by
     :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
-    '''
+    """
+
     print("Started calibrating...")
 
     # termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
 
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    objp = np.zeros((9 * 6, 3), np.float32)
+    objp = np.zeros((dimensions[0][1] * dimensions[1][1], 3), np.float32)
     objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
 
     # Arrays to store object points and image points from all the images.
     objpoints = []  # 3d point in real world space
     imgpoints = []  # 2d points in image plane.
     for img in images_checkerboard:
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = grayScaling(img)
 
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
@@ -358,18 +313,20 @@ def checkerboard_calibrate(images_distort, images_checkerboard):
             imgpoints.append(corners)
             # Draw and display the corners
             cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
-            cv2.imshow('img', img)
-            cv2.waitKey(0)
+            if show_img:
+                cv2.imshow('img', img)
+                cv2.waitKey(0)
         else:
             warnings.warn("No ret! This might lead to a crash.")
     # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
     try:
         # Calibrate the camera
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
 
         # Go through all the images and undistort them
         img_undst = []
         for n in images_distort:
+            # Get image shape
             h, w = n.shape[:2]
             newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 
@@ -377,22 +334,25 @@ def checkerboard_calibrate(images_distort, images_checkerboard):
             mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
             dst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
 
-            # crop the image
+            # crop the image back to original shape
             x, y, w, h = roi
             dst = dst[y:y + h, x:x + w]
             img_undst.append(dst)
-            cv2.imshow('calibresult.png', dst)
-            cv2.waitKey(0)
+            if show_img:
+                cv2.imshow('calibresult.png', dst)
+                cv2.waitKey(0)
 
-            print("Done calibrating")
+        print("Done calibrating")
 
         return img_undst
-    except:
+
+    except ValueError:
         # If the calibration fails, inform us and tell us the error
-        warnings.warn("Could not calibrate camera. Check images.")
+        warnings.warn(f"Could not calibrate camera. Check images. Error {ValueError}")
         mean_error = 0
         tot_error = 0
 
+        # Show the total error
         for i in range(len(objpoints)):
             imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
             error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
@@ -404,11 +364,9 @@ def checkerboard_calibrate(images_distort, images_checkerboard):
         return images_distort
 
 
-### MATHIAS FUNCTIONS ###
-
 def isolate_img(resized_input_image):
 
-    hsv_image = cv2.cvtColor(resized_input_image, cv2.COLOR_BGR2HSV)
+    hsv_image = convert_RGB_to_HSV(resized_input_image)
 
     def nothing(x):
         pass
@@ -439,7 +397,7 @@ def isolate_img(resized_input_image):
 
         mask = cv2.inRange(hsv_image, lowerRange_blue, upperRange_blue)
 
-        res = cv2.bitwise_and(resized_input_image, resized_input_image, mask=mask)
+        res = eip.bitwise_and(resized_input_image, mask)
 
         cv2.imshow("res", res)
         cv2.imshow("mask", mask)
@@ -448,3 +406,59 @@ def isolate_img(resized_input_image):
         if key == 27:
             break
     return res
+
+
+def grayScaling(img):
+
+    width, height = img.shape[:2]
+
+    new_img = np.zeros([width, height, 1], dtype=np.uint8)
+
+    for i in range(width):
+        for j in range(height):
+            list = [float(img[i][j][0]), float(img[i][j][1]), float(img[i][j][2])]
+            avg = float(((list[0]+list[1]+list[2])/3))
+            new_img[i][j][0] = avg
+
+    return new_img
+
+
+def convert_RGB_to_HSV(img):
+
+    width, height, channel = img.shape
+
+    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
+
+    hsv_img = np.zeros(img.shape, dtype=np.uint8)
+
+    for i in range(width):
+        for j in range(height):
+
+            # Defining Hue
+            h, s, v = 0.0, 0.0, 0.0
+            r, g, b = R[i][j], G[i][j], B[i][j]
+
+            max_rgb, min_rgb = max(r, g, b), min(r, g, b)
+            dif_rgb = (max_rgb-min_rgb)
+
+            if r == g == b:
+                h = 0
+            elif max_rgb == r:
+                h = ((60*(g-b))/dif_rgb)
+            elif max_rgb == g:
+                h = (((60*(b-r))/dif_rgb)+120)
+            elif max_rgb == b:
+                h = (((60*(r-g))/dif_rgb)+240)
+            if h < 0:
+                h = h+360
+
+            # Defining Saturation
+            if max_rgb == 0:
+                s = 0
+            else:
+                s = ((max_rgb-min_rgb)/max_rgb)
+
+            # Defining Value
+            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
+
+    return hsv_img
