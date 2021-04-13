@@ -16,7 +16,7 @@ images, names = bf.loadImages(paths[0][1], True, False, 40)
 img_cali, names_cali = bf.loadImages(paths[1][1], True, False, 40)
 
 # Calibrate camera
-fish_cali = bf.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, True)
+fish_cali = bf.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
 
 # Calibrated fish images
 left = fish_cali[0]

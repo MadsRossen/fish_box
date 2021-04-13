@@ -23,8 +23,8 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     images = []
     class_names = []
     img_list = os.listdir(path)
+    print("Loading in images...")
     print("Total images found:", len(img_list))
-
     for cl in img_list:
         # Find all the images in the file and save them in a list without the ".jpg"
         cur_img = cv2.imread(f"{path}/{cl}", 1)
@@ -48,6 +48,8 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     # Remove the image window after we have checked all the pictures
     cv2.destroyAllWindows()
 
+    print("Done loading the images!")
+
     return images, class_names
 
 
@@ -60,6 +62,8 @@ def replaceHighlights(main_img, spec_img, limit):
     :param limit: The limits of a pixel value before it is classified as a specular highlight
     :return: The image that has the highlights replaced
     """
+
+    print("Replacing highlights...")
 
     # Create copy
     img_main_cop = np.copy(main_img)
@@ -88,6 +92,8 @@ def replaceHighlights(main_img, spec_img, limit):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+    print("Done replacing the highlights!")
+
     return img_main_cop
 
 def createDict():
@@ -111,6 +117,8 @@ def cropToROI(orig_img, contours):
     :param contours: (x,y) coordinates for the contours in the orig_img.
     :return: (xcm, ycm) array with the (x,y) coordinates for the contours center of mass. crop_img: array of the cropped images (one image for each contour)
     '''
+
+    print("Finding maximum and minimum coordinates for each contours and then cropping...")
 
     height = []
     width = []
@@ -137,6 +145,9 @@ def cropToROI(orig_img, contours):
         # (Page 109 Eq: 7.3 and 7.4)
         xcm.append(int((xmin+xmax)/2))
         ycm.append(int((ymin+ymax)/2))
+
+    print("Found all the contours and cropped the image!")
+
     return xcm, ycm
 
 
@@ -147,6 +158,7 @@ def find_biggest_contour(cnt):
     :param cnt: A list of contours
     :return: The biggest contour inside the list
     """
+    print("Finding the biggest contours...")
     biggest_area = 0
     biggest_cnt = None
     for n in cnt:
@@ -154,6 +166,8 @@ def find_biggest_contour(cnt):
             biggest_cnt = n
         else:
             continue
+
+    print("Found the biggest contours!")
 
     return biggest_cnt
 
@@ -165,6 +179,8 @@ def find_contours(masks, images):
     :param images: A list of images to find contours inside
     :return: A list with the biggest contour for each image
     """
+
+    print("Finding contours...")
 
     def nothing(x):
         pass
@@ -220,6 +236,8 @@ def find_contours(masks, images):
         # Increment the image number so we have the right bitwise
         image_n = image_n + 1
 
+    print("Found all the contours!")
+
     return contours
 
 
@@ -243,6 +261,8 @@ def rotateImages(rotate_img, xcm, ycm, contours):
     :param contours: Contours from the images that needs to be rotated.
     :return: The rotated images.
     """
+
+    print("Raytracing on the image...")
 
     # Variable where the length and angle will be stored.
     data = []
@@ -273,6 +293,7 @@ def rotateImages(rotate_img, xcm, ycm, contours):
         plt.bar(data[nr]["angle"], data[nr]["length"])
         plt.axis([-180, 180, 0, 500])
 
+    print("Done raytracing!")
     plt.show()
     return rotate_img
 

@@ -11,6 +11,9 @@ def bitwise_and(img, mask):
     :param mask: The mask to reference in grayscale
     :return: An image where the mask decides
     '''
+
+    print("Doing bitwise and operation...")
+
     height, width = img.shape[:2]
     main_clone = np.zeros((height, width, 3), dtype=np.uint8)
     for y in range(height):
@@ -24,6 +27,9 @@ def bitwise_and(img, mask):
                 main_clone.itemset((y, x, 0), 0)
                 main_clone.itemset((y, x, 1), 0)
                 main_clone.itemset((y, x, 2), 0)
+
+    print("Done with the operation!")
+
     return main_clone
 
 
@@ -77,6 +83,8 @@ def findInRange(images):
     :param images: And array with images to create masks off of
     :return: A list with masks created from the images
     '''
+    print("Creating masks...")
+
     img_iso = []
     for img in images:
         # Make this function ourself
@@ -101,5 +109,7 @@ def findInRange(images):
         cv2.imshow("Mask", img_copy)
         cv2.waitKey(0)
         img_iso.append(img_copy)
+
+    print("Done creating masks!")
 
     return img_iso
