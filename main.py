@@ -1,6 +1,8 @@
 import cv2
+import numpy as np
+from matplotlib import pyplot as plt
 
-from Kasperfunctions import crop, resizeImg
+from Kasperfunctions import crop, resizeImg, highestPixelValue, showCompariHist, histColor
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage
 
 # load image
@@ -21,3 +23,33 @@ cv2.imshow("left", left_eq)
 cv2.imshow("right", right_eq)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+########################### Histogram ##########################
+# load image
+control = cv2.imread('fishpics/histogram_design1_and_control/GOPR1542.JPG', 1)
+
+paperdome = cv2.imread('fishpics/histogram_design1_and_control/papirdome.jpg', 1)
+paperdome2 = cv2.imread('fishpics/histogram_design1_and_control/papirdome2.jpeg', 1)
+
+diffuse = cv2.imread('fishpics/histogram_design1_and_control/diffuse.jpg', 1)
+
+'''
+print('diffuse')
+highestPixelValue(diffuse, False)
+highestPixelValue(diffuse, True)
+
+print('paperdome')
+highestPixelValue(paperdome, False)
+highestPixelValue(paperdome, True)
+
+print('paperdome2')
+highestPixelValue(paperdome2, False)
+highestPixelValue(paperdome2, True)
+
+print('control')
+highestPixelValue(control, False)
+highestPixelValue(control, True)
+'''
+
+histColor()
+

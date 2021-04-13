@@ -23,7 +23,6 @@ def normHistEqualizeHLS(img):
     fiskNomrHistEq = cv2.cvtColor(fiskHLS1,cv2.COLOR_HLS2BGR)
     return fiskNomrHistEq
 
-
 def claheHSL(img,clipLimit,tileGridSize):
     fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     LChannelHLS = fiskHLS2[:, :, 1]
@@ -197,7 +196,70 @@ def SURFalignment(img1, img2):
     cv2.imshow('img2Kp', img2Kp)
     cv2.waitKey(0)
 
+def highestPixelValue(imgOrg, invrt):
+    cv2.imshow('imgOrg',imgOrg)
+    img = imgOrg
+    width,height,channels = img.shape
 
+    high = 0
+    highcount = 0
+    limit = 100
+    limitchan = 10
 
+    for chan in range(channels):
+        for x in range(width):
+            for y in range(height):
+                if invrt != True:
+                    if img.item(x,y,chan) > high:
+                        high = img.item(x,y,chan)
+                elif invrt == True:
+                    if limitchan > img.item(x,y,chan):
+                        for i in range(1):
+                            for k in range(1):
+                                img.itemset((x - i, y - k, chan),255)
+
+                    '''                    
+                    if limit > img[x, y, 0] & limit > img[x, y, 1] & limit > img[x, y, 2]:
+                        for i in range(3):
+                            for k in range(3):
+                                img[x - i, y - k, 0] = 0
+                                img[x - i, y - k, 1] = 0
+                                img[x - i, y - k, 2] = 0
+                    '''
+
+    for chan in range(channels):
+        for x in range(width):
+            for y in range(height):
+                if high == img[x,y,chan]:
+                    highcount = highcount+1
+
+    print(high)
+    print(highcount)
+    cv2.imshow('img',img)
+
+def showCompariHist(img1,img2, stringImg1, stringImg2):
+    color = ('b', 'g', 'r')
+    img1histr = 0
+    img2histr = 0
+    for i, col in enumerate(color):
+        img1histrchannel = cv2.calcHist([img1], [i], None, [256], [0, 256])
+        img1histr = img1histr + img1histrchannel
+
+        img2histrchannel = cv2.calcHist([img2], [i], None, [256], [0, 256])
+        img2histr = img2histr + img2histrchannel
+
+    plt.plot(img1histr, color='orange'), plt.plot(img2histr, color='blue')
+    plt.xlim([0, 256])
+    plt.text(25, 23000, stringImg1, color='orange')
+    plt.text(220, 23000, stringImg2, color='blue')
+    plt.show()
+
+def histColor(img):
+    color = ('b', 'g', 'r')
+    for i, col in enumerate(color):
+        histr = cv2.calcHist([img], [i], None, [256], [0, 256])
+        plt.plot(histr, color=col)
+        plt.xlim([0, 256])
+    plt.show()
 
 
