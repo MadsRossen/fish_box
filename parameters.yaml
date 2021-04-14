@@ -1,0 +1,11 @@
+kernels:
+  open_kernel: 20
+  close_kernel: 13
+
+checkerboard_dimensions:
+  x: 9
+  y: 6
+
+paths:
+  fish: "fishpics/direct2pic"
+  checkerboard_calibration: "fishpics/CheckerBoards"
