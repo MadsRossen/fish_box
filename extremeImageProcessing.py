@@ -18,7 +18,7 @@ def bitwise_and(img, mask):
     main_clone = np.zeros((height, width, 3), dtype=np.uint8)
     for y in range(height):
         for x in range(width):
-            mask_val = mask.item(y, x)
+            mask_val = mask.item(y, x, 0)
             if mask_val != 0:
                 main_clone.itemset((y, x, 0), img.item(y, x, 0))
                 main_clone.itemset((y, x, 1), img.item(y, x, 1))
@@ -50,7 +50,6 @@ def make_img_bit(images):
                     bit_img.itemset((y, x, 0), 0)
 
         bit_images.append(bit_img)
-        cv2.waitKey(0)
 
     return bit_images
 
@@ -106,8 +105,6 @@ def findInRange(images):
         # Turn every other pixel which is not white to black
         img_copy[img_copy != 255] = 0
 
-        cv2.imshow("Mask", img_copy)
-        cv2.waitKey(0)
         img_iso.append(img_copy)
 
     print("Done creating masks!")

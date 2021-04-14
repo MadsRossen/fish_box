@@ -30,14 +30,12 @@ img = eip.findInRange(img_spec_rem)
 
 # Make bit image for contour and morph
 bit = eip.make_img_bit(img)
-cv2.imshow("bit img", bit[0])
-cv2.waitKey(0)
 
 # Get the contours
 contour = bf.find_contours(img, img_spec_rem)
 
 # Find contours middle point
-xcm, ycm = bf.cropToROI(img_spec_rem, contour)
+xcm, ycm = bf.contour_MOC(img_spec_rem, contour)
 
 # Raytracing
 rot_img = bf.rotateImages(img_spec_rem, xcm, ycm, contour)

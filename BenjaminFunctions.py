@@ -108,17 +108,21 @@ def createDict():
     return dict
 
 
-def cropToROI(orig_img, contours):
+def contour_MOC(orig_img, contours):
     '''
-    Finds the minimum (x,y) and maximum (x,y) coordinates for each contour and then crops the original image to fit the contours.
-    It also computes the center of mass of each contour.
+    Finds the minimum (x,y) and maximum (x,y) coordinates for each contour and computes the center of mass of each
+    contour.
 
     :param orig_img: original image that will be cropped.
     :param contours: (x,y) coordinates for the contours in the orig_img.
-    :return: (xcm, ycm) array with the (x,y) coordinates for the contours center of mass. crop_img: array of the cropped images (one image for each contour)
+    :return: (xcm, ycm) array with the (x,y) coordinates for the contours center of mass. crop_img: array of the cropped
+    images (one image for each contour)
     '''
 
     print("Finding maximum and minimum coordinates for each contours and then cropping...")
+
+    print(f"Original images length: {len(orig_img)}")
+    print(f"Contours len: {len(contours)}")
 
     height = []
     width = []
@@ -128,7 +132,7 @@ def cropToROI(orig_img, contours):
 
     xcm = []
     ycm = []
-    for nr in range(len(contours)):
+    for nr in range(len(orig_img)):
         ymax, ymin = 0, height[nr]
         xmax, xmin = 0, width[nr]
         for point in range(len(contours[nr])):
@@ -176,6 +180,7 @@ def find_contours(masks, images):
     """
     Returns the biggest contour for a list of images.
 
+    :param masks: Masks to find contours of
     :param images: A list of images to find contours inside
     :return: A list with the biggest contour for each image
     """
@@ -225,11 +230,13 @@ def find_contours(masks, images):
                 break
 
         # Find contours
-        contours, hierarchy = cv2.findContours(closed_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours_c, hierarchy = cv2.findContours(closed_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+        print(f"Contours length:{len(contours)}")
 
         # Getting the biggest contour which is always the fish
-        if contours is not None:
-            contours.append(find_biggest_contour(contours))
+        if contours_c is not None:
+            contours.append(find_biggest_contour(contours_c))
         else:
             print("Can't find contour")
 
