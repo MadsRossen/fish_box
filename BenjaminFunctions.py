@@ -6,9 +6,7 @@ import warnings
 import extremeImageProcessing as eip
 
 from matplotlib import pyplot as plt
-
 from Kasperfunctions import resizeImg
-
 # A library that has a equalize matcher!
 from skimage.exposure import match_histograms
 

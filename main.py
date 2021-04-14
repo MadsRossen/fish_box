@@ -28,8 +28,8 @@ img_spec_rem = [bf.replaceHighlights(left, right, 225), bf.replaceHighlights(rig
 # Threshold to create a mask for each image
 img = eip.findInRange(img_spec_rem)
 
-# Make bit image for contour and morph
-bit = eip.make_img_bit(img)
+# Dilation
+dia = eip.dilation(img)
 
 # Get the contours
 contour = bf.find_contours(img, img_spec_rem)
