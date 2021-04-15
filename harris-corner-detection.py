@@ -2,20 +2,24 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
-filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Projekt/code/ex1.png", 0)
-img = cv.cvtColor(filename.copy(), cv.COLOR_GRAY2RGB)
+filename = cv.imread("/filelocation/", 0)
+img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
+# Parameters
 windowSize = 5
 k = 0.04
-threshold = 10000.00
+threshold = 100000
 
 offset = int(windowSize/2)
 
 x_size = filename.shape[1] - offset
 y_size = filename.shape[0] - offset
 
+# Gaussian blur
+gBlur = cv.GaussianBlur(filename,(windowSize,windowSize),1.4)
+
 # Partial differentiation hvor ** = ^2
-dy, dx = np.gradient(filename)
+dy, dx = np.gradient(gBlur)
 Ixx = dx**2
 Ixy = dy*dx
 Iyy = dy**2
@@ -50,6 +54,7 @@ for y in range(offset, y_size):
         r = det - k * (trace**2)
 
         if r > threshold:
+            print("R: ", r)
             img[y,x] = (0,0,255)
 
 
@@ -70,4 +75,3 @@ plt.title("Ixy")
 plt.imshow(Ixy, cmap='gray', vmin=0, vmax=255)
 
 plt.show()
-
