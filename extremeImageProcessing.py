@@ -1,8 +1,5 @@
 import numpy as np
 import cv2
-import BenjaminFunctions as bf
-
-from matplotlib import pyplot as plt
 
 
 def bitwise_and(img, mask):
@@ -14,13 +11,13 @@ def bitwise_and(img, mask):
     :return: An image where the mask decides
     '''
 
-    print("Doing bitwise and operation...")
+    # print("Doing bitwise and operation...")
 
     height, width = img.shape[:2]
-    main_clone = img.clone()
+    main_clone = np.zeros((height, width, 3), dtype=np.uint8)
     for y in range(height):
         for x in range(width):
-            mask_val = mask.item(y, x, 0)
+            mask_val = mask.item(y, x)
             if mask_val != 0:
                 main_clone.itemset((y, x, 0), img.item(y, x, 0))
                 main_clone.itemset((y, x, 1), img.item(y, x, 1))
@@ -30,71 +27,94 @@ def bitwise_and(img, mask):
                 main_clone.itemset((y, x, 1), 0)
                 main_clone.itemset((y, x, 2), 0)
 
-    print("Done with the operation!")
+    # print("Done with the operation!")
 
     return main_clone
 
 
-def make_img_bit(images):
-    bit_images = []
-    for img in images:
-        cv2.imshow("img", img)
-        cv2.waitKey(0)
-        height, width = img.shape[:2]
-        bit_img = np.zeros((height, width, 1), dtype=np.uint8)
+def erosion(mask, kernel_ero):
 
-        for y in range(height):
-            for x in range(width):
-                value = img.item(y, x, 0)
-                if value == 255:
-                    bit_img.itemset((y, x, 0), 1)
-                else:
-                    bit_img.itemset((y, x, 0), 0)
+    print("Started erosion...")
 
-        bit_images.append(bit_img)
+    # Acquire size of the image
+    height, width = mask.shape[0], mask.shape[1]
+    # Define the structuring element
+    k = kernel_ero.shape[0]
+    # kernel_ero = np.ones((k, k), dtype=np.uint8)
+    constant = (k - 1) // 2
 
-    return bit_images
+    # Define new image
+    imgErode = np.zeros((height, width), dtype=np.uint8)
+
+    # Erosion
+    for y in range(constant, height - constant):
+        for x in range(constant, width - constant):
+            temp = mask[y - constant:y + constant + 1, x - constant:x + constant + 1]
+            product = temp * kernel_ero
+            imgErode[y, x] = np.min(product)
+
+    print("Done with erosion!")
+
+    return imgErode
 
 
-def erosion():
-    print("Fit")
+def dilation(mask, kernel_di):
+    '''
+    Dilates a list of masks.
 
-
-def dilation(masks):
-    # Hit, if one of pixels in the kernel hits, then turn that pixel on
+    :param kernel_di:
+    :param mask: The list of masks to dilate
+    :return: The list of dilated masks
+    '''
 
     print("Started dilating...")
-    for n in masks:
-        # Acquire size of the image
-        p, q = n.shape[0], n.shape[1]
-        # Show the image
-        plt.imshow(n, cmap="gray")
-        # Define new image to store the pixels of dilated image
-        imgDilate = np.zeros((p, q), dtype=np.uint8)
-        # Define the structuring element
-        SED = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
-        constant1 = 1
-        # Dilation operation without using inbuilt CV2 function
-        for i in range(constant1, p - constant1):
-            for j in range(constant1, q - constant1):
-                temp = n[i - constant1:i + constant1 + 1, j - constant1:j + constant1 + 1]
-                product = temp * SED
-                imgDilate[i, j] = np.max(product)
-        plt.imshow(imgDilate, cmap="gray")
-        cv2.imshow("Dilated", imgDilate)
-        cv2.waitKey(0)
+
+    # Acquire size of the image
+    height, width = mask.shape[0], mask.shape[1]
+    # Define new image to store the pixels of dilated image
+    imgDilate = np.zeros((height, width), dtype=np.uint8)
+    # Define the kernel shape
+    ks = kernel_di.shape[0]
+    # Use that to define the constant for the middle part
+    constant1 = (ks - 1) // 2
+    # Dilation
+    for y in range(constant1, height - constant1):
+        for x in range(constant1, width - constant1):
+            temp = mask[y - constant1:y + constant1 + 1, x - constant1:x + constant1 + 1]
+            product = temp * kernel_di
+            imgDilate[y, x] = np.max(product)
 
     print("Done with dilation!")
 
+    return imgDilate
 
 
-def morph_close():
+def morph_close(mask, kernel):
+    """
+    Close morphology on a mask and a given kernel.
 
-    print("close")
+    :param kernel:
+    :param mask: The mask to use the morphology on
+    :return: Close morphology on a mask
+    """
+
+    dilate = dilation(mask, kernel)
+    ero = erosion(dilate, kernel)
+
+    return ero
 
 
-def morph_open():
-    print("Open")
+def morph_open(mask, kernel):
+    """
+    Open morphology on a mask and a given kernel.
+
+    :param mask: The mask to use the morphology on
+    :return: Open morphology on a mask
+    """
+    ero = erosion(mask, kernel)
+    dilate = dilation(ero, kernel)
+
+    return dilate
 
 
 def find_contours():
@@ -113,8 +133,10 @@ def findInRange(images):
     img_iso = []
     for img in images:
         # Make this function ourself
-        img_hsv = bf.convert_RGB_to_HSV(img)
-        img_copy = img.copy()
+        img_hsv = convert_RGB_to_HSV(img)
+
+        height, width = img.shape[0], img.shape[1]
+        img_copy = np.zeros((height, width), dtype=np.uint8)
 
         # Define upper and lower
         lower = np.array([0, 16, 16])
@@ -136,3 +158,61 @@ def findInRange(images):
     print("Done creating masks!")
 
     return img_iso
+
+
+def grayScaling(img):
+    """
+    Function that will convert a BGR image to a mean valued greyscale image.
+    :param img: BGR image that will be converted to greyscale
+    :return: The converted greyscale image.
+    """
+
+    h, w, = img.shape[:2]
+    greyscale_img1 = np.zeros((h, w, 1), np.uint8)
+
+    for y in range(h):
+        for x in range(w):
+            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2))/3
+            greyscale_img1.itemset((y, x, 0), I1)
+    return greyscale_img1
+
+
+def convert_RGB_to_HSV(img):
+
+    width, height, channel = img.shape
+
+    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
+
+    hsv_img = np.zeros(img.shape, dtype=np.uint8)
+
+    for i in range(width):
+        for j in range(height):
+
+            # Defining Hue
+            h, s, v = 0.0, 0.0, 0.0
+            r, g, b = R[i][j], G[i][j], B[i][j]
+
+            max_rgb, min_rgb = max(r, g, b), min(r, g, b)
+            dif_rgb = (max_rgb-min_rgb)
+
+            if r == g == b:
+                h = 0
+            elif max_rgb == r:
+                h = ((60*(g-b))/dif_rgb)
+            elif max_rgb == g:
+                h = (((60*(b-r))/dif_rgb)+120)
+            elif max_rgb == b:
+                h = (((60*(r-g))/dif_rgb)+240)
+            if h < 0:
+                h = h+360
+
+            # Defining Saturation
+            if max_rgb == 0:
+                s = 0
+            else:
+                s = ((max_rgb-min_rgb)/max_rgb)
+
+            # Defining Value
+            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
+
+    return hsv_img

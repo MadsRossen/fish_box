@@ -206,29 +206,33 @@ def find_contours(masks, images):
                 kernel_val_close_val = 1
 
             # Make kernels for each morph type
-            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
-            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+
+            # kernel_open = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+            # kernel_close = np.ones((kernel_val_close_val, kernel_val_close_val), dtype=np.uint8)
 
             # Morphology
-            opening = cv2.morphologyEx(n, cv2.MORPH_OPEN, kernel_open)
-            closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel_close)
+            # opening = cv2.morphologyEx(n, cv2.MORPH_OPEN, kernel_open)
+            # closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel_close)
 
-            # To get a single channel, maybe make a bit image instead
-            closed_gray = grayScaling(closing)
+            opening = eip.morph_open(n, kernel_open)
+            closing = eip.morph_close(opening, kernel_close)
 
             # To see how much of the fish we are keeping
             if closing is not None:
-                res = eip.bitwise_and(images[image_n], closed_gray)
+                res = eip.bitwise_and(images[image_n], closing)
 
             cv2.imshow("Adjust_Hue_Satuation_Value", closing)
             cv2.imshow("Res", res)
 
             key = cv2.waitKey(1)
+
             if key == 27:
                 break
 
         # Find contours
-        contours_c, hierarchy = cv2.findContours(closed_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         print(f"Contours length:{len(contours)}")
 
@@ -327,7 +331,7 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
     objpoints = []  # 3d point in real world space
     imgpoints = []  # 2d points in image plane.
     for img in images_checkerboard:
-        gray = grayScaling(img)
+        gray = eip.grayScaling(img)
 
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
@@ -392,7 +396,7 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
 
 def isolate_img(resized_input_image):
 
-    hsv_image = convert_RGB_to_HSV(resized_input_image)
+    hsv_image = eip.convert_RGB_to_HSV(resized_input_image)
 
     def nothing(x):
         pass
@@ -433,58 +437,15 @@ def isolate_img(resized_input_image):
             break
     return res
 
+# For demostration in report
+def rgb_hsv_gray(img):
+    img_hsv = img.copy()
+    img_gray = img.copy()
 
-def grayScaling(img):
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    width, height = img.shape[:2]
-
-    new_img = np.zeros([width, height, 1], dtype=np.uint8)
-
-    for i in range(width):
-        for j in range(height):
-            list = [float(img[i][j][0]), float(img[i][j][1]), float(img[i][j][2])]
-            avg = float(((list[0]+list[1]+list[2])/3))
-            new_img[i][j][0] = avg
-
-    return new_img
-
-
-def convert_RGB_to_HSV(img):
-
-    width, height, channel = img.shape
-
-    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
-
-    hsv_img = np.zeros(img.shape, dtype=np.uint8)
-
-    for i in range(width):
-        for j in range(height):
-
-            # Defining Hue
-            h, s, v = 0.0, 0.0, 0.0
-            r, g, b = R[i][j], G[i][j], B[i][j]
-
-            max_rgb, min_rgb = max(r, g, b), min(r, g, b)
-            dif_rgb = (max_rgb-min_rgb)
-
-            if r == g == b:
-                h = 0
-            elif max_rgb == r:
-                h = ((60*(g-b))/dif_rgb)
-            elif max_rgb == g:
-                h = (((60*(b-r))/dif_rgb)+120)
-            elif max_rgb == b:
-                h = (((60*(r-g))/dif_rgb)+240)
-            if h < 0:
-                h = h+360
-
-            # Defining Saturation
-            if max_rgb == 0:
-                s = 0
-            else:
-                s = ((max_rgb-min_rgb)/max_rgb)
-
-            # Defining Value
-            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
-
-    return hsv_img
+    cv2.imshow("RGB", img)
+    cv2.imshow("Gray", img_gray)
+    cv2.imshow("HSV", img_hsv)
+    cv2.waitKey(0)
