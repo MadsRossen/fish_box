@@ -1,5 +1,5 @@
 import cv2
-import BenjaminFunctions as bf
+import functions as ft
 import yamlLoader as yamlL
 import extremeImageProcessing as eip
 import numpy as np
@@ -13,20 +13,20 @@ yaml_data = yamlL.yaml_loader("parameters.yaml")
 kernels, checkerboard_dimensions, paths = yamlL.setup_parameters(yaml_data)
 
 # load images into memory
-images, names = bf.loadImages(paths[0][1], True, False, 15)
+images, names = ft.loadImages(paths[0][1], True, False, 15)
 
 # Calibrate images
-img_cali, names_cali = bf.loadImages(paths[1][1], True, False, 40)
+img_cali, names_cali = ft.loadImages(paths[1][1], True, False, 40)
 
 # Calibrate camera
-fish_cali = bf.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
+fish_cali = ft.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
 
 # Calibrated fish images
 left = fish_cali[0]
 right = fish_cali[1]
 
 # Specular highlights
-img_spec_rem = [bf.replaceHighlights(left, right, 225), bf.replaceHighlights(right, left, 225)]
+img_spec_rem = [ft.replaceHighlights(left, right, 225), ft.replaceHighlights(right, left, 225)]
 
 # Threshold to create a mask for each image
 masks = eip.findInRange(img_spec_rem)
@@ -38,13 +38,13 @@ cv2.imshow("Ero", ero)
 cv2.waitKey(0)
 
 # Get the contours
-contour = bf.find_contours(masks, img_spec_rem)
+contour = ft.find_contours(masks, img_spec_rem)
 
 # Find contours middle point
-xcm, ycm = bf.contour_MOC(img_spec_rem, contour)
+xcm, ycm = ft.contour_MOC(img_spec_rem, contour)
 
 # Raytracing
-rot_img = bf.rotateImages(img_spec_rem, xcm, ycm, contour)
+rot_img = ft.rotateImages(img_spec_rem, xcm, ycm, contour)
 
 # display images and it's names
 cv2.imshow(f"Left: {names[0]}", left)
