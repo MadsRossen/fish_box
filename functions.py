@@ -395,6 +395,12 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
 
 
 def isolate_img(resized_input_image):
+    """
+    Returns the image of which pixels was in range of the selected HSV values.
+
+    :param resized_input_image: The image to find pixels in range of the HSV values
+    :return: A mask of the isolated pixels
+    """
 
     hsv_image = eip.convert_RGB_to_HSV(resized_input_image)
 
@@ -436,16 +442,3 @@ def isolate_img(resized_input_image):
         if key == 27:
             break
     return res
-
-# For demostration in report
-def rgb_hsv_gray(img):
-    img_hsv = img.copy()
-    img_gray = img.copy()
-
-    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    cv2.imshow("RGB", img)
-    cv2.imshow("Gray", img_gray)
-    cv2.imshow("HSV", img_hsv)
-    cv2.waitKey(0)

@@ -33,7 +33,13 @@ def bitwise_and(img, mask):
 
 
 def erosion(mask, kernel_ero):
+    """
+    A standard erosion solver, shrinks the given mask.
 
+    :param mask: The mask to shrink
+    :param kernel_ero: The kenerl to shrink the erosion by
+    :return: Returns the erosied mask
+    """
     print("Started erosion...")
 
     # Acquire size of the image
@@ -60,11 +66,11 @@ def erosion(mask, kernel_ero):
 
 def dilation(mask, kernel_di):
     '''
-    Dilates a list of masks.
+    A standard dilation solver, expands the given mask.
 
-    :param kernel_di:
-    :param mask: The list of masks to dilate
-    :return: The list of dilated masks
+    :param mask: The mask to dilate
+    :param kernel_di: The kernel to dilate by
+    :return: The dilated mask
     '''
 
     print("Started dilating...")
@@ -178,6 +184,12 @@ def grayScaling(img):
 
 
 def convert_RGB_to_HSV(img):
+    """
+    Converts an RGB image to HSV.
+
+    :param img: The image to convert
+    :return: HSV image
+    """
 
     width, height, channel = img.shape
 
