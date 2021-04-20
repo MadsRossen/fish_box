@@ -13,7 +13,7 @@ yaml_data = yamlL.yaml_loader("parameters.yaml")
 kernels, checkerboard_dimensions, paths = yamlL.setup_parameters(yaml_data)
 
 # load images into memory
-images, names = ft.loadImages(paths[0][1], True, False, 15)
+images, names = ft.loadImages(paths[0][1], True, False, 40)
 
 # Calibrate images
 img_cali, names_cali = ft.loadImages(paths[1][1], True, False, 40)

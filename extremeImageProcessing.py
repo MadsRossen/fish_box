@@ -11,10 +11,12 @@ def bitwise_and(img, mask):
     :return: An image where the mask decides
     '''
 
-    # print("Doing bitwise and operation...")
-
+    # Get the height and width of the image to make an array filled with zeroes to have a black image
     height, width = img.shape[:2]
     main_clone = np.zeros((height, width, 3), dtype=np.uint8)
+
+    # Go through each pixel and change the clones pixel values to the ones of the original image, as long as the same
+    # pixel on the mask is not black
     for y in range(height):
         for x in range(width):
             mask_val = mask.item(y, x)
@@ -26,8 +28,6 @@ def bitwise_and(img, mask):
                 main_clone.itemset((y, x, 0), 0)
                 main_clone.itemset((y, x, 1), 0)
                 main_clone.itemset((y, x, 2), 0)
-
-    # print("Done with the operation!")
 
     return main_clone
 
@@ -173,9 +173,11 @@ def grayScaling(img):
     :return: The converted greyscale image.
     """
 
+    # Get the height and width of the image to create a cop of the other image in an array of zeros
     h, w, = img.shape[:2]
     greyscale_img1 = np.zeros((h, w, 1), np.uint8)
 
+    # Go through each pixel in the image and record the intensity, then safe it for the same pixel in the image copy
     for y in range(h):
         for x in range(w):
             I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2))/3
