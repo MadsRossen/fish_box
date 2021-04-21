@@ -1,33 +1,37 @@
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import ndimage as ndi
 
-filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Robotic Perception/Miniprojekt/mini_py/img/Med50%støjCorner.png", 0)
+filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Projekt/code/images/MedStøjCorner.png", 0)
 img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
+# Parameters
+windowSize = 3
+k = 0.06
+threshold = 159952
 
-windowSize = 5
-k = 0.04
-threshold = 100000
+# Til test af billeder set til true eller false:
+test = True
 
 offset = int(windowSize/2)
 
 x_size = filename.shape[1] - offset
 y_size = filename.shape[0] - offset
 
-# Gaussian blur
-gBlur = cv.GaussianBlur(filename,(windowSize,windowSize),1.4)
+# mean blur
+gBlur = cv.blur(filename, (5, 5))
 
 # Partial differentiation hvor ** = ^2
-dy, dx = np.gradient(gBlur)
-Ixx = dx**2
-Ixy = dy*dx
-Iyy = dy**2
+Iy, Ix = np.gradient(gBlur)
+Ixx = Ix**2
+Ixy = Iy*Ix
+Iyy = Iy**2
 
+CornerList = []
 
 # Fra offset til y_size og offset til x_size
 print("Start running corner detection . . . ")
+
 for y in range(offset, y_size):
     for x in range(offset, x_size):
 
@@ -54,10 +58,25 @@ for y in range(offset, y_size):
         # finder r for harris corner detection equation
         r = det - k * (trace**2)
 
-        if r > threshold:
-            print("R: ", r)
-            img[y,x] = (0,0,255)
+        if bool(test):
+            CornerList.append([x, y, Ix[x,y], Iy[x,y], r])
 
+        if r > threshold:
+            img[y,x] = (255,0,0)
+            CornerList.append([x, y, Ix[x,y], Iy[x,y], r])
+
+
+if bool(test):
+
+    print('Creating file')
+
+    CornerFile = open('CornersFound.txt', 'w')
+    CornerFile.write('x, \t y, \t Ix, \t Iy, \t R \n')
+    for i in range(len(CornerList)):
+        CornerFile.write(str(CornerList[i][0]) + ' , ' + str(CornerList[i][1]) + ' , ' + str(CornerList[i][2]) + ' , ' + str(CornerList[i][3]) + ' , ' + str(CornerList[i][4]) + '\n')
+    CornerFile.close() 
+
+print('Done!')
 
 plt.subplot(2,2,1)
 plt.title("Billede")
@@ -76,3 +95,4 @@ plt.title("Ixy")
 plt.imshow(Ixy, cmap='gray', vmin=0, vmax=255)
 
 plt.show()
+
