@@ -2,7 +2,6 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
-<<<<<<< HEAD
 filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Projekt/code/images/MedStøjCorner.png", 0)
 img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
@@ -13,7 +12,7 @@ threshold = 159952
 
 # Til test af billeder set til true eller false:
 test = True
-=======
+
 filename = cv.imread("/filelocation/", 0)
 img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
@@ -21,14 +20,13 @@ img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 windowSize = 5
 k = 0.04
 threshold = 100000
->>>>>>> a3c8d21fa22201b1df78fe4f493470b5680a0281
 
 offset = int(windowSize/2)
 
 x_size = filename.shape[1] - offset
 y_size = filename.shape[0] - offset
 
-<<<<<<< HEAD
+
 # mean blur
 gBlur = cv.blur(filename, (5, 5))
 
@@ -37,16 +35,6 @@ Iy, Ix = np.gradient(gBlur)
 Ixx = Ix**2
 Ixy = Iy*Ix
 Iyy = Iy**2
-=======
-# Gaussian blur
-gBlur = cv.GaussianBlur(filename,(windowSize,windowSize),1.4)
-
-# Partial differentiation hvor ** = ^2
-dy, dx = np.gradient(gBlur)
-Ixx = dx**2
-Ixy = dy*dx
-Iyy = dy**2
->>>>>>> a3c8d21fa22201b1df78fe4f493470b5680a0281
 
 CornerList = []
 
@@ -83,7 +71,6 @@ for y in range(offset, y_size):
             CornerList.append([x, y, Ix[x,y], Iy[x,y], r])
 
         if r > threshold:
-<<<<<<< HEAD
             img[y,x] = (255,0,0)
             CornerList.append([x, y, Ix[x,y], Iy[x,y], r])
 
@@ -97,10 +84,6 @@ if bool(test):
     for i in range(len(CornerList)):
         CornerFile.write(str(CornerList[i][0]) + ' , ' + str(CornerList[i][1]) + ' , ' + str(CornerList[i][2]) + ' , ' + str(CornerList[i][3]) + ' , ' + str(CornerList[i][4]) + '\n')
     CornerFile.close() 
-=======
-            print("R: ", r)
-            img[y,x] = (0,0,255)
->>>>>>> a3c8d21fa22201b1df78fe4f493470b5680a0281
 
 print('Done!')
 
