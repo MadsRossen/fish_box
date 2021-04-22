@@ -25,6 +25,7 @@ y_size = filename.shape[0] - offset
 
 # Partial differentiation hvor ** = ^2
 Iy, Ix = np.gradient(filename)
+# Repræsentation af M matricen
 Ixx = Ix**2
 Ixy = Iy*Ix
 Iyy = Iy**2
@@ -81,18 +82,18 @@ print('Done!')
 
 plt.subplot(2,2,1)
 plt.title("Billede")
-plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+plt.imshow(img, cmap='gray')
 
 plt.subplot(2,2,2)
 plt.title("Ixx")
-plt.imshow(Ixx, cmap='gray', vmin=0, vmax=255)
+plt.imshow(Ixx, cmap='gray')
 
 plt.subplot(2,2,3)
 plt.title("Iyy")
-plt.imshow(Iyy, cmap='gray', vmin=0, vmax=255)
+plt.imshow(Iyy, cmap='gray')
 
 plt.subplot(2,2,4)
 plt.title("Ixy")
-plt.imshow(Ixy, cmap='gray', vmin=0, vmax=255)
+plt.imshow(Ixy, cmap='gray')
 
 plt.show()

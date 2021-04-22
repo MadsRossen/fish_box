@@ -18,3 +18,11 @@ Youtube: [Interest point detection](https://www.youtube.com/watch?v=_qgKQGsuKeQ)
 ## Code inspiration:
 
 Github: [adityaintwala](https://github.com/adityaintwala/Harris-Corner-Detection)
+
+# Sobel–Feldman operator
+
+## Math 
+
+Wiki: [Sobel operator](https://en.wikipedia.org/wiki/Sobel_operator)
+
+More: [Sobel Edge Detector](https://homepages.inf.ed.ac.uk/rbf/HIPR2/sobel.htm)
