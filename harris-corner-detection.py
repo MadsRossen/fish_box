@@ -2,24 +2,16 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
-filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Projekt/code/images/MedStøjCorner.png", 0)
+filename = cv.imread("File path", 0)
 img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
 # Parameters
-windowSize = 3
-k = 0.06
-threshold = 159952
+windowSize = 3  
+k = 0.06 # Parameter between 0.04 - 0.06
+threshold = 6359 
 
 # Til test af billeder set til true eller false:
-test = True
-
-filename = cv.imread("/filelocation/", 0)
-img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
-
-# Parameters
-windowSize = 5
-k = 0.04
-threshold = 100000
+test = False
 
 offset = int(windowSize/2)
 
@@ -28,10 +20,11 @@ y_size = filename.shape[0] - offset
 
 
 # mean blur
-gBlur = cv.blur(filename, (5, 5))
+
+# gBlur = cv.blur(filename, (5, 5))
 
 # Partial differentiation hvor ** = ^2
-Iy, Ix = np.gradient(gBlur)
+Iy, Ix = np.gradient(filename)
 Ixx = Ix**2
 Ixy = Iy*Ix
 Iyy = Iy**2
@@ -72,7 +65,6 @@ for y in range(offset, y_size):
 
         if r > threshold:
             img[y,x] = (255,0,0)
-            CornerList.append([x, y, Ix[x,y], Iy[x,y], r])
 
 
 if bool(test):

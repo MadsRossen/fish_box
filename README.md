@@ -17,4 +17,4 @@ Youtube: [Interest point detection](https://www.youtube.com/watch?v=_qgKQGsuKeQ)
 
 ## Code inspiration:
 
-Github: [adityaintwala](https://github.com/adityaintwala/Harris-Corner-Detection-)
+Github: [adityaintwala](https://github.com/adityaintwala/Harris-Corner-Detection)
