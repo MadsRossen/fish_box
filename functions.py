@@ -6,7 +6,6 @@ import warnings
 import extremeImageProcessing as eip
 
 from matplotlib import pyplot as plt
-from Kasperfunctions import resizeImg
 # A library that has a equalize matcher!
 from skimage.exposure import match_histograms
 
@@ -93,6 +92,16 @@ def replaceHighlights(main_img, spec_img, limit):
     print("Done replacing the highlights!")
 
     return img_main_cop
+
+
+def resizeImg(img, scale_percent):
+    width = int(img.shape[1] * scale_percent / 100)
+    height = int(img.shape[0] * scale_percent / 100)
+    dim = (width, height)
+
+    resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+    # resize image
+    return resized
 
 def createDict():
     '''
