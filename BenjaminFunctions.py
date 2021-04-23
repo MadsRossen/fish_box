@@ -2,11 +2,8 @@ import cv2
 import numpy as np
 
 
-def replaceHighlights(main_img, spec_img, limit):
-    """
-    This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
 def replaceHighlights(main_img, spec_img, limit, lowerLimit):
-    '''
+    """
     This functions replaces the highlights from a main picture with the pixels from a specular image pixels
 
     :param main_img: The image of which will get the pixels replaced with the specular image
@@ -22,32 +19,50 @@ def replaceHighlights(main_img, spec_img, limit, lowerLimit):
     img_main_cop = np.copy(main_img)
     img_spec_cop = np.zeros((spec_img.shape[0], spec_img.shape[1], 3), np.uint8)
 
-    # Isolate the areas where the color is white
-    main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
-                             (img_main_cop[:, :, 2] >= limit))
+    # Step 1 # Create a mask with the areas where the color is too bright and too dark
+    # (highlighst and shadows/darkspots), this is set by the limits 'limit' and 'lowerLimit', and where the other
+    # image is not more dark ig bright than the replacement image.
+    main_img_spec = np.where((img_main_cop[:, :, 0] >= limit)
+                             & (img_main_cop[:, :, 1] >= limit)
+                             & (img_main_cop[:, :, 2] >= limit)
+                             & (img_main_cop[:, :, 0] > spec_img[:, :, 0])
+                             & (img_main_cop[:, :, 1] > spec_img[:, :, 1])
+                             & (img_main_cop[:, :, 2] > spec_img[:, :, 2]))
 
-    # Replace pixels with pixel in other image
+    main_img_black = np.where((lowerLimit >= img_main_cop[:, :, 0])
+                              & (lowerLimit >= img_main_cop[:, :, 1])
+                              & (lowerLimit >= img_main_cop[:, :, 2])
+                              & (spec_img[:, :, 0] > img_main_cop[:, :, 0])
+                              & (spec_img[:, :, 1] > img_main_cop[:, :, 1])
+                              & (spec_img[:, :, 2] > img_main_cop[:, :, 2]))
+
+    difference = cv2.subtract(main_img, spec_img)
+    cv2.imshow('difference', difference)
+    spec_img = spec_img + difference
+    cv2.imshow('spec_img difference', spec_img)
+
+
+    # Step 2 # Replace pixels with pixels in other image in the area of the masks.
     img_main_cop[main_img_spec] = spec_img[main_img_spec]
-    img_spec_cop[main_img_spec] = spec_img[main_img_spec]
-    img_main_cop[main_img_spec] = (0, 0, 0)
+    img_main_cop[main_img_black] = spec_img[main_img_black]
 
-    img_main_cop[main_img_spec] = img_spec_cop[main_img_spec]
-
+    '''
+    Benjamin har lavet noget her
     # Different methods, find out what works best later
     match = match_histograms(img_spec_cop, img_main_cop, multichannel=True)
     match2 = match_histograms(spec_img, img_main_cop, multichannel=True)
-
+    
     # Replace pixels, replace the matches to use different methods
     img_main_cop[main_img_spec] = match2[main_img_spec]
-
     cv2.imshow("match", match2)
-    cv2.imshow("spec_img", spec_img)
-    cv2.imshow("final", img_main_cop)
-    cv2.imshow("Spec", img_spec_cop)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    '''
 
     print("Done replacing the highlights!")
+    cv2.imshow("main_img", main_img)
+    cv2.imshow("spec_img", spec_img)
+    cv2.imshow("Final", img_main_cop)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # Isolate the areas where the color is dark
     main_img_dark = np.where((img_main_cop[:, :, 0] <= lowerLimit) & (img_main_cop[:, :, 1] <= lowerLimit) &

@@ -159,6 +159,7 @@ def meanEdgeRGB(img):
 
     print('mean blue: ',meanBlue)
     print('mean green: ',meanGreen)
+    print('mean red: ', meanRed)
     print(' ')
 
     meanBlueBelly = bellyBlue / bi
@@ -214,9 +215,12 @@ def highestPixelValue(imgOrg, invrt):
                         high = img.item(x,y,chan)
                 elif invrt == True:
                     if limitchan > img.item(x,y,chan):
+
+                        '''
                         for i in range(1):
                             for k in range(1):
                                 img.itemset((x - i, y - k, chan),255)
+                        '''
 
                     '''                    
                     if limit > img[x, y, 0] & limit > img[x, y, 1] & limit > img[x, y, 2]:
@@ -233,14 +237,23 @@ def highestPixelValue(imgOrg, invrt):
                 if high == img[x,y,chan]:
                     highcount = highcount+1
 
+    total = height*width*chan
+    percentageOfPictureHighlights = highcount/total*100
+
     print(high)
-    print(highcount)
+    print(total)
+    print(percentageOfPictureHighlights)
     cv2.imshow('img',img)
+
 
 def showCompariHist(img1,img2, stringImg1, stringImg2):
     color = ('b', 'g', 'r')
     img1histr = 0
     img2histr = 0
+    h1, w1, chan1 = img1.shape
+    h2, w2, chan2 = img2.shape
+
+    # Create histograms
     for i, col in enumerate(color):
         img1histrchannel = cv2.calcHist([img1], [i], None, [256], [0, 256])
         img1histr = img1histr + img1histrchannel
@@ -248,10 +261,50 @@ def showCompariHist(img1,img2, stringImg1, stringImg2):
         img2histrchannel = cv2.calcHist([img2], [i], None, [256], [0, 256])
         img2histr = img2histr + img2histrchannel
 
-    plt.plot(img1histr, color='orange'), plt.plot(img2histr, color='blue')
+    # Normalize histogram
+    pixelsTotal1 = h1 * w1 * chan1
+    pixelsTotal2 = h2 * w2 * chan2
+    img1histrNorm = img1histr / pixelsTotal1
+    img2histrNorm = img2histr/pixelsTotal2
+
+    plt.plot(img1histrNorm, color='orange',label=stringImg1), plt.plot(img2histrNorm, color='blue',label=stringImg2)
+    plt.legend(loc = 'upper right')
     plt.xlim([0, 256])
-    plt.text(25, 23000, stringImg1, color='orange')
-    plt.text(220, 23000, stringImg2, color='blue')
+    plt.show()
+
+def showCompari3Hist(img1,img2, img3, stringImg1, stringImg2, stringImg3):
+    color = ('b', 'g', 'r')
+    img1histr = 0
+    img2histr = 0
+    img3histr = 0
+    h1, w1, chan1 = img1.shape
+    h2, w2, chan2 = img2.shape
+    h3, w3, chan3 = img3.shape
+
+    # Create histograms
+    for i, col in enumerate(color):
+        img1histrchannel = cv2.calcHist([img1], [i], None, [256], [0, 256])
+        img1histr = img1histr + img1histrchannel
+
+        img2histrchannel = cv2.calcHist([img2], [i], None, [256], [0, 256])
+        img2histr = img2histr + img2histrchannel
+
+        img3histrchannel = cv2.calcHist([img3], [i], None, [256], [0, 256])
+        img3histr = img3histr + img3histrchannel
+
+    # Normalize histogram
+    pixelsTotal1 = h1 * w1 * chan1
+    pixelsTotal2 = h2 * w2 * chan2
+    pixelsTotal3 = h3 * w3 * chan3
+    img1histrNorm = img1histr / pixelsTotal1
+    img2histrNorm = img2histr/pixelsTotal2
+    img3histrNorm = img3histr / pixelsTotal3
+
+    plt.plot(img1histrNorm, color='orange'), plt.plot(img2histrNorm, color='blue'), plt.plot(img3histrNorm, color='green')
+    plt.xlim([0, 256])
+    plt.text(50, 0.001, stringImg1, color='orange')
+    plt.text(150, 0.001, stringImg2, color='blue')
+    plt.text(200, 0.001, stringImg3, color='green')
     plt.show()
 
 def histColor(img):
@@ -261,5 +314,4 @@ def histColor(img):
         plt.plot(histr, color=col)
         plt.xlim([0, 256])
     plt.show()
-
 

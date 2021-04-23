@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-from Kasperfunctions import crop, resizeImg, highestPixelValue, showCompariHist, histColor
-from BenjaminFunctions import replaceHighlights, equalizeColoredImage
+from Kasperfunctions import crop, resizeImg, highestPixelValue, showCompariHist, histColor, showCompari3Hist, \
+    meanEdgeRGB
+from BenjaminFunctions import replaceHighlights
 
+'''meanEdgeRGB
 # load image
 left = cv2.imread('fishpics/direct2pic/GOPR1591.JPG', 1)
 left_crop = crop(left, 650, 500, 1000, 3000)
@@ -33,7 +35,6 @@ paperdome2 = cv2.imread('fishpics/histogram_design1_and_control/papirdome2.jpeg'
 
 diffuse = cv2.imread('fishpics/histogram_design1_and_control/diffuse.jpg', 1)
 
-'''
 print('diffuse')
 highestPixelValue(diffuse, False)
 highestPixelValue(diffuse, True)
@@ -49,7 +50,31 @@ highestPixelValue(paperdome2, True)
 print('control')
 highestPixelValue(control, False)
 highestPixelValue(control, True)
+
+########################### Color histogram Histogram halogen VS  ##########################
+currentMethod = cv2.imread('fishpics/Lightsetup_ite_2/CurrentMethod.JPG', 1)
+domelighting_ite2 = cv2.imread('fishpics/Lightsetup_ite_2/domelight.JPG', 1)
+domelighting_ite1 = cv2.imread('fishpics/Lightsetup_ite_2/domelight_ite1_ROI.JPG', 1)
+
+cv2.imshow('domelighting_ite2',domelighting_ite2)
+
+showCompariHist(currentMethod, domelighting_ite2,'Current Method', 'domelighting_ite2')
+
+highestPixelValue(currentMethod, True)
+highestPixelValue(currentMethod, False)
+highestPixelValue(domelighting_ite2, True)
+highestPixelValue(domelighting_ite2, False)
 '''
 
-histColor()
+EdgesPic = cv2.imread('fishpics/Edges/EdgesPic.png', 1)
+meanEdgeRGB(EdgesPic)
+
+EdgesPic2 = cv2.imread('fishpics/Edges/EdgesCodPic.png', 1)
+meanEdgeRGB(EdgesPic2)
+
+########################### Color histogram Histogram halogen VS  ##########################
+Bund = cv2.imread('fishpics/direct2pic/Iteration2/Bund.JPG', 1)
+Top = cv2.imread('fishpics/direct2pic/Iteration2/Top.JPG', 1)
+replaceHighlights(Bund,Top,127,127)
+
 
