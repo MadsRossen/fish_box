@@ -2,6 +2,64 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
+def get_min_max_r():
+    min, max = 1000, -1000
+    for y=0, height-1:
+      for x=0, width-1:
+        value, temp, temp = get_rgb(x,y)
+        if value<min:
+          min = value
+        if value>max:
+          max = value
+    return min,max
+
+def get_min_max_g():
+    min, max = 1000, -1000
+    for y=0, height-1 do
+      for x=0, width-1 do
+        temp, value, temp = get_rgb (x,y)
+        if value<min then
+          min = value
+        if value>max then
+          max = value
+    return min,max
+
+def get_min_max_b():
+    min, max = 1000, -1000
+    for y=0, height-1:
+      for x=0, width-1:
+        temp, temp, value = get_rgb (x,y)
+        if value<min then
+          min = value
+        if value>max:
+    return min,max
+
+def remap(v, min, max):
+    return (v-min) * 1.0/(max-min)
+
+def cs_get_rgb(x,y,min_r,max_r,min_g,max_g,min_b,max_b)
+    r,g,b = get_rgb(x,y)
+    r = remap(r, min_r, max_r)
+    g = remap(g, min_g, max_g)
+    b = remap(b, min_b, max_b)
+    return r,g,b
+
+def component_stretch()
+    min_r, max_r = get_min_max_r ()
+    min_g, max_g = get_min_max_g ()
+    min_b, max_b = get_min_max_b ()
+
+    for y=0, height do
+      for x=0, width do
+        set_rgb(x,y, cs_get_rgb(x,y,min_r,max_r, min_g, max_g, min_b, max_b))
+    flush ()
+
+def white_balance(frame):
+    wb = cv2.xphoto.createGrayworldWB()
+    wb.setSaturationThreshold(1)
+    new_frame = wb.balanceWhite(frame)
+    return new_frame
+
 def doClaheLAB2(null):
     global val2, kernel
     val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')

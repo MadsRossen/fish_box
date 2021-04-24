@@ -3,10 +3,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from Kasperfunctions import crop, resizeImg, highestPixelValue, showCompariHist, histColor, showCompari3Hist, \
-    meanEdgeRGB
+    meanEdgeRGB, white_balance
 from BenjaminFunctions import replaceHighlights
 
-'''meanEdgeRGB
+'''
 # load image
 left = cv2.imread('fishpics/direct2pic/GOPR1591.JPG', 1)
 left_crop = crop(left, 650, 500, 1000, 3000)
@@ -65,16 +65,25 @@ highestPixelValue(currentMethod, False)
 highestPixelValue(domelighting_ite2, True)
 highestPixelValue(domelighting_ite2, False)
 '''
+grayScaleCard = cv2.imread('fishpics/grayScaleCard/gray_scale_cardCropped.JPG',1)
+cv2.imshow('grayScaleCard', grayScaleCard)
+whiteBalancedImg = white_balance(grayScaleCard)
+cv2.imshow('whiteBalancedImg', whiteBalancedImg)
+cv2.waitKey(0)
 
+########################### Find the mean of the color of the  ##########################
 EdgesPic = cv2.imread('fishpics/Edges/EdgesPic.png', 1)
 meanEdgeRGB(EdgesPic)
 
 EdgesPic2 = cv2.imread('fishpics/Edges/EdgesCodPic.png', 1)
 meanEdgeRGB(EdgesPic2)
 
-########################### Color histogram Histogram halogen VS  ##########################
+########################### Merge two pictures to one - Replacing only highlights  ##########################
 Bund = cv2.imread('fishpics/direct2pic/Iteration2/Bund.JPG', 1)
 Top = cv2.imread('fishpics/direct2pic/Iteration2/Top.JPG', 1)
 replaceHighlights(Bund,Top,127,127)
+
+
+
 
 
