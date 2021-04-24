@@ -19,6 +19,10 @@ Youtube: [Interest point detection](https://www.youtube.com/watch?v=_qgKQGsuKeQ)
 
 Github: [adityaintwala](https://github.com/adityaintwala/Harris-Corner-Detection)
 
+## Create the Harris Response and image gradient distribution
+Run the [Matlab script](https://github.com/MadsRossen/fish_box/blob/detection/HarrisResponse.m)
+and use the text file createt form [harris-corner-detection.py](https://github.com/MadsRossen/fish_box/blob/detection/harris-corner-detection.py). Remember to set the boolean [test](https://github.com/MadsRossen/fish_box/blob/f1947c68d0196c51ed7bfd74ac125ea4fe3149b0/harris-corner-detection.py#L14) to True.
+
 # Sobel–Feldman operator
 
 ## Math 
