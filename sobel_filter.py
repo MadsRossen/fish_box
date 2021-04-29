@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
-file = cv.imread('/Users/madsrossen/Documents/4. Semester/Projekt/code/images/Bikesgray.jpg', 0)
+file = cv.imread('/Users/madsrossen/Documents/4. Semester/Projekt/code/images/fP0Im.jpg', 0)
 
 col, row = np.shape(file)
 print('Row: ', row)
@@ -23,13 +23,10 @@ for y in range(row - 2):
         Iy = np.sum(np.multiply(gy, file[x:x+3, y:y+3])) # multiply two 3x3 matrix together in y
         Ix = np.sum(np.multiply(gx, file[x:x+3, y:y+3])) # multiply two 3x3 matrix together in x
 
-        Iyy[x+1, y+1] = Iy
-        Ixx[x+1, y+1] = Ix
+        Iyy[x, y] = Iy
+        Ixx[x, y] = Ix
 
-        sobel_image[x+1, y+1] = np.sqrt(Ix**2 + Iy**2)
-
-
-
+        sobel_image[x, y] = np.sqrt(Ix**2 + Iy**2)
 
 
 plt.subplot(2,2,1)
