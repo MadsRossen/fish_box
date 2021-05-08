@@ -2,58 +2,6 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-def get_min_max_r():
-    min, max = 1000, -1000
-    for y=0, height-1:
-      for x=0, width-1:
-        value, temp, temp = get_rgb(x,y)
-        if value<min:
-          min = value
-        if value>max:
-          max = value
-    return min,max
-
-def get_min_max_g():
-    min, max = 1000, -1000
-    for y=0, height-1 do
-      for x=0, width-1 do
-        temp, value, temp = get_rgb (x,y)
-        if value<min then
-          min = value
-        if value>max then
-          max = value
-    return min,max
-
-def get_min_max_b():
-    min, max = 1000, -1000
-    for y=0, height-1:
-      for x=0, width-1:
-        temp, temp, value = get_rgb (x,y)
-        if value<min then
-          min = value
-        if value>max:
-    return min,max
-
-def remap(v, min, max):
-    return (v-min) * 1.0/(max-min)
-
-def cs_get_rgb(x,y,min_r,max_r,min_g,max_g,min_b,max_b)
-    r,g,b = get_rgb(x,y)
-    r = remap(r, min_r, max_r)
-    g = remap(g, min_g, max_g)
-    b = remap(b, min_b, max_b)
-    return r,g,b
-
-def component_stretch()
-    min_r, max_r = get_min_max_r ()
-    min_g, max_g = get_min_max_g ()
-    min_b, max_b = get_min_max_b ()
-
-    for y=0, height do
-      for x=0, width do
-        set_rgb(x,y, cs_get_rgb(x,y,min_r,max_r, min_g, max_g, min_b, max_b))
-    flush ()
-
 def white_balance(frame):
     wb = cv2.xphoto.createGrayworldWB()
     wb.setSaturationThreshold(1)
@@ -141,13 +89,24 @@ def resizeImg(img, scale_percent):
     # resize image
     return resized
 
-def meanEdgeRGB(img):
+def meanEdgeRGB(img, widthOfEdge, middleBelly=0):
+    '''
+    Finds mean RGB values of the edge of a  cod.
+    :param img: The image with the object. Mut have removed background, showing only the object, NOTE: The cod must be
+    horizontally placed in the image
+    :param widthOfEdge: The width of the edge that is taken.
+    :param middleOfCod: The distance between the top of the image to the middle of the cod in pixels.
+    :return:
+    '''
+
+    print('Calculating mean edge value')
     cv2.imshow('img', img)
     cv2.waitKey(0)
 
     imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
     ret,imgGrayBin = cv2.threshold(imgGray,0, 255,cv2.THRESH_BINARY)
+    cv2.imshow('imgGrayBin',imgGrayBin)
 
     kernel = np.ones((4, 4), np.uint8)
     erosionBefore = cv2.erode(imgGrayBin, kernel)
@@ -184,30 +143,30 @@ def meanEdgeRGB(img):
                 if res.item(y,x,0) > 0:
                     blue = blue + res.item(y,x,0)
                     i = i + 1
-                    if y >= 130:
+                    if y >= middleBelly:
                         bellyBlue = bellyBlue + res.item(y,x,0)
                         bi = bi + 1
-                    if y < 130:
+                    if y < middleBelly:
                         backBlue = backBlue + res.item(y, x, 0)
                         bki = bki + 1
 
                 if res.item(y,x,1) > 0:
                     green = green + res.item(y,x,1)
                     u = u + 1
-                    if y >= 130:
+                    if y >= middleBelly:
                         bellyGreen = bellyGreen + res.item(y,x,1)
                         bu = bu + 1
-                    if y < 130:
+                    if y < middleBelly:
                         backGreen = backGreen + res.item(y, x, 1)
                         bku = bku + 1
 
                 if res.item(y,x,2) > 0:
                     red = red + res.item(y,x,2)
                     k = k + 1
-                    if y >= 130:
+                    if y >= middleBelly:
                         bellyRed = bellyRed + res.item(y, x, 2)
                         bk = bk + 1
-                    if y < 130:
+                    if y < middleBelly:
                         backRed = backRed + res.item(y, x, 2)
                         bkk = bkk + 1
 
@@ -236,6 +195,7 @@ def meanEdgeRGB(img):
     print('mean blue back: ', meanBlueBack)
     print('mean green back: ', meanGreenBack)
     print('mean red back: ', meanRedBack)
+    print(' ')
 
 # SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
 def SURFalignment(img1, img2):
