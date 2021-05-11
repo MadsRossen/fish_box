@@ -6,6 +6,9 @@ import numpy as np
 
 from scipy import ndimage
 
+# Rapport images
+# img = ft.images_for_rapport()
+
 # Load in yaml data from the file
 yaml_data = yamlL.yaml_loader("parameters.yaml")
 
@@ -30,12 +33,6 @@ img_spec_rem = [ft.replaceHighlights(left, right, 225), ft.replaceHighlights(rig
 
 # Threshold to create a mask for each image
 masks = eip.findInRange(img_spec_rem)
-
-# Erosion
-kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-ero = eip.erosion(masks[0], kernel_open)
-cv2.imshow("Ero", ero)
-cv2.waitKey(0)
 
 # Get the contours
 contour = ft.find_contours(masks, img_spec_rem)

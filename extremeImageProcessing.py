@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import warnings
 
 
 def bitwise_and(img, mask):
@@ -46,6 +47,7 @@ def erosion(mask, kernel_ero):
     height, width = mask.shape[0], mask.shape[1]
     # Define the structuring element
     k = kernel_ero.shape[0]
+    SE = np.ones((k, k), dtype=np.uint8)
     # kernel_ero = np.ones((k, k), dtype=np.uint8)
     constant = (k - 1) // 2
 
@@ -53,11 +55,14 @@ def erosion(mask, kernel_ero):
     imgErode = np.zeros((height, width), dtype=np.uint8)
 
     # Erosion
-    for y in range(constant, height - constant):
-        for x in range(constant, width - constant):
-            temp = mask[y - constant:y + constant + 1, x - constant:x + constant + 1]
-            product = temp * kernel_ero
-            imgErode[y, x] = np.min(product)
+    if k % 2 >= 1:
+        for y in range(constant, height - constant):
+            for x in range(constant, width - constant):
+                temp = mask[y - constant:y + constant + 1, x - constant:x + constant + 1]
+                product = temp * SE
+                imgErode[y, x] = np.min(product)
+    else:
+        warnings.warn("Kernel shape is even, it should be uneven!")
 
     print("Done with erosion!")
 
@@ -84,11 +89,14 @@ def dilation(mask, kernel_di):
     # Use that to define the constant for the middle part
     constant1 = (ks - 1) // 2
     # Dilation
-    for y in range(constant1, height - constant1):
-        for x in range(constant1, width - constant1):
-            temp = mask[y - constant1:y + constant1 + 1, x - constant1:x + constant1 + 1]
-            product = temp * kernel_di
-            imgDilate[y, x] = np.max(product)
+    if ks % 2 >= 1:
+        for y in range(constant1, height - constant1):
+            for x in range(constant1, width - constant1):
+                temp = mask[y - constant1:y + constant1 + 1, x - constant1:x + constant1 + 1]
+                product = temp * kernel_di
+                imgDilate[y, x] = np.max(product)
+    else:
+        warnings.warn("Kernel shape is even, it should be uneven!")
 
     print("Done with dilation!")
 

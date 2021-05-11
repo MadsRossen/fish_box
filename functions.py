@@ -4,6 +4,7 @@ import os
 import math
 import warnings
 import extremeImageProcessing as eip
+import sys
 
 from matplotlib import pyplot as plt
 # A library that has a equalize matcher!
@@ -95,13 +96,22 @@ def replaceHighlights(main_img, spec_img, limit):
 
 
 def resizeImg(img, scale_percent):
+    """
+    Resizes the image by a scaling percent.
+
+    :param img: The image to resize
+    :param scale_percent: The percent to scale by
+    :return: The resized image
+    """
+
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
 
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-    # resize image
+
     return resized
+
 
 def createDict():
     '''
@@ -198,41 +208,44 @@ def find_contours(masks, images):
         pass
 
     cv2.namedWindow("Adjust_Hue_Satuation_Value")
-    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 1, 20, nothing)
-    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 1, 20, nothing)
+    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
 
     contours = []
     image_n = 0
+    old_open_val = 0
+    old_closes_val = 0
     for n in masks:
         while True:
             kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
             kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
 
-            # Find a better method than this
-            if kernel_val_open_val == 0:
-                kernel_val_open_val = 1
-            if kernel_val_close_val == 0:
-                kernel_val_close_val = 1
+            # Make sure it's only uneven numbers for the kernels
+            if kernel_val_open_val % 2 == 0:
+                cv2.setTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value", kernel_val_open_val + 1)
+                kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+
+            if kernel_val_close_val % 2 == 0:
+                cv2.setTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value", kernel_val_close_val + 1)
+                kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
 
             # Make kernels for each morph type
-            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
+            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
 
-            # kernel_open = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
-            # kernel_close = np.ones((kernel_val_close_val, kernel_val_close_val), dtype=np.uint8)
-
-            # Morphology
-            # opening = cv2.morphologyEx(n, cv2.MORPH_OPEN, kernel_open)
-            # closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel_close)
-
-            opening = eip.morph_open(n, kernel_open)
-            closing = eip.morph_close(opening, kernel_close)
+            # Only use opening and closing when the slider is moved instead of every frame
+            if old_open_val != kernel_val_open_val or old_closes_val != kernel_val_close_val:
+                opening = eip.morph_open(n, kernel_open)
+                closing = eip.morph_close(opening, kernel_close)
+                old_open_val = kernel_val_open_val
+                old_closes_val = kernel_val_close_val
 
             # To see how much of the fish we are keeping
             if closing is not None:
                 res = eip.bitwise_and(images[image_n], closing)
 
             cv2.imshow("Adjust_Hue_Satuation_Value", closing)
+            cv2.imshow("Mask", n)
             cv2.imshow("Res", res)
 
             key = cv2.waitKey(1)
@@ -353,7 +366,9 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
             # Draw and display the corners
             cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
             if show_img:
+                print(imgpoints)
                 cv2.imshow('img', img)
+                cv2.imshow('gray', gray)
                 cv2.waitKey(0)
         else:
             warnings.warn("No ret! This might lead to a crash.")
@@ -451,3 +466,60 @@ def isolate_img(resized_input_image):
         if key == 27:
             break
     return res
+
+
+"""
+def sobel():
+    scale = 1
+    delta = 0
+    ddepth = cv2.CV_16S
+
+    if len(sys.argv) < 1:
+        print('Not enough parameters')
+        print('Usage:\nmorph_lines_detection.py < path_to_image >')
+        return -1
+    # Load the image
+    src = cv2.imread("fishpics/Other/Fish_Cropped.PNG", cv2.IMREAD_COLOR)
+    # Check if image is loaded fine
+    if src is None:
+        print('Error opening image: ' + sys.argv[0])
+        return -1
+
+    src = cv2.GaussianBlur(src, (3, 3), 0)
+
+    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+
+    grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
+    grad_y = cv2.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
+
+    abs_grad_x = cv2.convertScaleAbs(grad_x)
+    abs_grad_y = cv2.convertScaleAbs(grad_y)
+
+    grad = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+
+    cv2.imshow("Sobel Edge Detector final", grad)
+    cv2.imwrite('fishpics/Other/Total.jpg', grad)
+    cv2.imshow("X", abs_grad_x)
+    cv2.imwrite('fishpics/Other/x.jpg', abs_grad_x)
+    cv2.imshow("Y", abs_grad_y)
+    cv2.imwrite('fishpics/Other/y.jpg', abs_grad_y)
+    cv2.waitKey(0)
+
+    return 0
+"""
+
+def images_for_rapport():
+    # Load the image
+    img = cv2.imread("fishpics/Other/Fish_Cropped.PNG", cv2.IMREAD_COLOR)
+
+    # Check if image is loaded fine
+    if img is None:
+        print('Error opening image: ' + sys.argv[0])
+        return -1
+
+    threshold = isolate_img(img)
+
+    cv2.imshow("Adjust_Hue_Satuation_Value", threshold)
+    cv2.waitKey(0)
+
+    return 0
