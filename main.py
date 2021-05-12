@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 import glob
@@ -73,8 +75,6 @@ whiteBalancedImg = white_balance(grayScaleCard)
 cv2.imshow('whiteBalancedImg', whiteBalancedImg)
 cv2.waitKey(0)
 
-'''
-
 ########################### Find the mean of the color of#655458 the  ####655458###51473E#####################
 EdgesPic = cv2.imread('fishpics/Edges/EdgesPic.png', 1)
 meanEdgeRGB(EdgesPic, 1, middleBelly=130)
@@ -88,7 +88,7 @@ Top = cv2.imread('fishpics/direct2pic/Iteration2/Top.JPG', 1)
 replaceHighlights(Bund,Top,127,127)
 
 
-'''
+
 ########################### Checkerboard calibration using openCV  ####655458###51473E#####################
 
 print("Camera calibration initiated\n")
@@ -168,11 +168,160 @@ for i in range(len(objpoints)):
 
 print("total error: {}".format(mean_error/len(objpoints)) )
 
-########################### Checkerboard calibration using openCV method with own build  ####655458###51473E#####################
+#### Checkerboard calibration using fisheye method in MATLAB ##########
+CHECKERBOARD = (6,9)
+subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
+objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
+objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+_img_shape = None
+objpoints = [] # 3d point in real world space
+imgpoints = [] # 2d points in image plane.
+images = glob.glob('checkerboards_test2/*.jpg')
+for fname in images:
+    img = cv2.imread(fname)
+    if _img_shape == None:
+        _img_shape = img.shape[:2]
+    else:
+        assert _img_shape == img.shape[:2], "All images must share the same size."
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    # Find the chess board corners
+    ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
+    # If found, add object points, image points (after refining them)
+    if ret == True:
+        objpoints.append(objp)
+        cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),subpix_criteria)
+        imgpoints.append(corners)
+N_OK = len(objpoints)
+K = np.zeros((3, 3))
+D = np.zeros((4, 1))
+rvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
+tvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
+rms, _, _, _, _ = \
+    cv2.fisheye.calibrate(
+        objpoints,
+        imgpoints,
+        gray.shape[::-1],
+        K,
+        D,
+        rvecs,
+        tvecs,
+        calibration_flags,
+        (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
+    )
+print("Found " + str(N_OK) + " valid images for calibration")
+print("DIM=" + str(_img_shape[::-1]))
+print("K=np.array(" + str(K.tolist()) + ")")
+print("D=np.array(" + str(D.tolist()) + ")")
+
+img = cv2.imread('checkerboards_test2/control/Kontrol.JPG', 0)
+img_dim = img.shape[:2][::-1]
+
+DIM = img_dim
+balance = 1
+
+scaled_K = K * img_dim[0] / DIM[0]
+scaled_K[2][2] = 1.0
+new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D,
+    img_dim, np.eye(3), balance=balance)
+map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3),
+    new_K, img_dim, cv2.CV_16SC2)
+undist_image = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR,
+    borderMode=cv2.BORDER_CONSTANT)
+
+#percent by which the image is resized
+scale_percent = 30
+
+#calculate the 50 percent of original dimensions
+width = int(undist_image.shape[1] * scale_percent / 100)
+height = int(undist_image.shape[0] * scale_percent / 100)
+
+# dsize
+dsize = (width, height)
+
+# resize image
+undist_image_scaled = cv2.resize(undist_image, dsize)
+
+cv2.imshow('undist_image_scaled',undist_image_scaled)
+cv2.waitKey(0)
+'''
+
+#### Checkerboard calibration using strech matrix found in MATLAB using scarramuzza (fisheye method)##########
+distorted = cv2.imread('checkerboards_test2/control/Kontrol.JPG', 0)
+
+rows, cols = distorted.shape
+
+undistorted = np.zeros(distorted.shape, dtype=distorted.dtype)
+
+stretchMatrix = np.array([[1.00682131035995      , -0.00586627807785578],
+                         [0.00628286256688552   , 1]], dtype=np.float64)
+
+InvStrechmatrix = np.linalg.inv(stretchMatrix)
+
+distortionCenter = np.array([[1443.77390922027], [1122.35038919366]], dtype=np.float64)
+
+for v_m in range(rows):
+    for u_m in range(cols):
+        output_pos = stretchMatrix.dot(np.array([[u_m],[v_m]])) + distortionCenter
+        output_pos_x = round(output_pos[0,0])
+        output_pos_y = round(output_pos[1,0])
+
+        if output_pos_x < cols and output_pos_y < rows:
+            undistorted[v_m,u_m] = distorted[output_pos_y%rows,output_pos_x%cols]
+        else:
+            undistorted[v_m,u_m] = 0
+
+plt.imshow(distorted)
+plt.show()
+plt.imshow(undistorted)
+plt.show()
+
+for v_m in range(rows):
+    for u_m in range(cols):
+        output_pos = InvStrechmatrix.dot(np.array([[u_m],[v_m]])) - distortionCenter
+        output_pos_x = round(output_pos[0,0])
+        output_pos_y = round(output_pos[1,0])
+
+        if output_pos_x < cols and output_pos_y < rows:
+            undistorted[v_m,u_m] = distorted[(output_pos_y),(output_pos_x)]
+        else:
+            undistorted[v_m,u_m] = 0
+
+plt.imshow(distorted)
+plt.show()
+plt.imshow(undistorted)
+plt.show()
+
+for i in range(rows):
+    for j in range(cols):
+        offset_x = round(c * i + d * j + c_x)
+        offset_y = round(e * i + l * j + c_y)
+        if offset_x < rows & offset_y < cols:
+            undistorted[i,j] = distorted[(offset_x),(offset_y)]
+        else:
+            undistorted[i,j] = 0
+
+cv2.undistort(distorted, distCoeffs=stretchMatrix, cameraMatrix=0)
+
+#percent by which the image is resized
+scale_percent = 30
+
+#calculate the 50 percent of original dimensions
+width = int(distorted.shape[1] * scale_percent / 100)
+height = int(distorted.shape[0] * scale_percent / 100)
+
+# dsize
+dsize = (width, height)
+
+distorted_small = cv2.resize(undistorted, dsize)
+undistorted_small = cv2.resize(distorted, dsize)
+
+cv2.imshow('distorted',distorted_small)
+cv2.waitKey(0)
+cv2.imshow('undistorted',undistorted_small)
+cv2.waitKey(0)
+
 'https://docs.opencv.org/master/d9/d0c/group__calib3d.html'
-
-#Find chessboard corners - objPoints and imgPoints
-
 
 ########################### Zangs method #####################
 'https://docs.opencv.org/master/d9/d0c/group__calib3d.html'
@@ -214,4 +363,3 @@ H = K*C
 
 x = K*R*[I_3| X_O]*X
 x = PX
-'''
