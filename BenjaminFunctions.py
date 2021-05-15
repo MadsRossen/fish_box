@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 
-from Kasperfunctions import resizeImg, crop
+from basic_image_functions import resizeImg, crop
 
 def loadImages(edit_images, scaling_percentage=30):
     '''

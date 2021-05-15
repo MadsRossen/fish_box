@@ -1,6 +1,6 @@
 import cv2
 
-from Kasperfunctions import crop, resizeImg
+from basic_image_functions import crop, resizeImg
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
      loadImages
 from mathias_functions import isolate_img
@@ -12,6 +12,8 @@ img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
 
 
 'Step 3: Crop to ROI'
+
+crop()
 
 'Step 4: Apply CLAHE'
 

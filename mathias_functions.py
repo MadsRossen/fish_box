@@ -3,7 +3,7 @@ import numpy as np
 import os
 import shutil
 
-from Kasperfunctions import resizeImg, crop
+from basic_image_functions import resizeImg, crop
 from BenjaminFunctions import
 
 def save_img(img)
