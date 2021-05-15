@@ -4,9 +4,8 @@ import os
 import shutil
 
 from basic_image_functions import resizeImg, crop
-from BenjaminFunctions import
 
-def save_img(img)
+def save_img(img):
 
     out_folder_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"
     in_folder_path =  "C:\\Users\\MOCst\\PycharmProjects\\fiskefiler"

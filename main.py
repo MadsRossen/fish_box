@@ -1,21 +1,22 @@
 import cv2
 
-from basic_image_functions import crop, resizeImg
+from basic_image_functions import crop, resizeImg, claheHSL
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
      loadImages
 from mathias_functions import isolate_img
+from calibration import undistortImg
 
 'Step 1: Load image'
 img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
 
 'Step 2: undistort image'
-
+img_undistorted = undistortImg(img, True)
 
 'Step 3: Crop to ROI'
-
-crop()
+img_cropped  =crop(img_undistorted)
 
 'Step 4: Apply CLAHE'
+img_CLAHE = claheHSL(img_cropped)
 
 'Step 5: Apply CLAHE'
 

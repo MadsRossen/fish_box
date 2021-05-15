@@ -16,6 +16,7 @@ def undistortImg(distortedImg, recalibrate=False):
     '''
 
     if recalibrate == True:
+        print('Calibrating camera please wait ... \n')
         CHECKERBOARD = (6,9) # size of checkerboard
 
         subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
@@ -27,7 +28,7 @@ def undistortImg(distortedImg, recalibrate=False):
         objpoints = [] # 3d point in real world space
         imgpoints = [] # 2d points in image plane.
 
-        images = glob.glob('checkerboards_test2/*.jpg') #loaded images from folder in work tree
+        images = glob.glob('checkerboard_pics/*.JPG') #loaded images from folder in work tree
         #Run through list of images of checkerboards
         for fname in images:
             img = cv2.imread(fname)
@@ -78,8 +79,11 @@ def undistortImg(distortedImg, recalibrate=False):
 
     print("Found " + str(N_OK_array) + " valid images for calibration")
     print("DIM = Dimension of images = " + str(_img_shape[::-1]))
-    print("K = Camera matrix = np.array(" + str(K.tolist()) + ")")
-    print("D = np.array(" + str(D.tolist()) + ")")
+    print("\n Intrinsic parameters")
+    print("Camera matrix: K =")
+    print(K)
+    print("D =")
+    print(D)
 
     img_dim = distortedImg.shape[:2][::-1]
 
@@ -88,11 +92,16 @@ def undistortImg(distortedImg, recalibrate=False):
 
     scaled_K = K * img_dim[0] / DIM[0]
     scaled_K[2][2] = 1.0
+
     new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D,
         img_dim, np.eye(3), balance=balance)
+
+    print('\n Undistorting image ... ')
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3),
         new_K, img_dim, cv2.CV_16SC2)
     undist_image = cv2.remap(distortedImg, map1, map2, interpolation=cv2.INTER_LINEAR,
         borderMode=cv2.BORDER_CONSTANT)
+
+    print('\n Image has been undistorted')
 
     return undist_image
