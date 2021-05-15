@@ -28,7 +28,7 @@ def undistortImg(distortedImg, recalibrate=False):
         objpoints = [] # 3d point in real world space
         imgpoints = [] # 2d points in image plane.
 
-        images = glob.glob('checkerboard_pics/*.JPG') #loaded images from folder in work tree
+        images = glob.glob('calibration/checkerboard_pics/*.JPG') #loaded images from folder in work tree
         #Run through list of images of checkerboards
         for fname in images:
             img = cv2.imread(fname)
@@ -71,15 +71,15 @@ def undistortImg(distortedImg, recalibrate=False):
         np.save('calibration/intrinsic_parameters/matrixD.npy', D)
         np.save('calibration/N_OK.npy', _img_shape_array)
         np.save('calibration/_img_shape.npy', _img_shape)
+        print("Found " + str(N_OK_array) + " valid images for calibration")
+        print("DIM = Dimension of images = " + str(_img_shape_array[::-1]))
 
     K = np.load('calibration/intrinsic_parameters/matrixK.npy')
     D = np.load('calibration/intrinsic_parameters/matrixD.npy')
-    N_OK_array = np.load('calibration/N_OK_array.npy')
-    _img_shape_array = np.load('calibration/_img_shape.npy', _img_shape)
+    N_OK_array = np.load('calibration/N_OK.npy')
+    _img_shape_array = np.load('calibration/_img_shape.npy')
 
-    print("Found " + str(N_OK_array) + " valid images for calibration")
-    print("DIM = Dimension of images = " + str(_img_shape[::-1]))
-    print("\n Intrinsic parameters")
+    print("\nIntrinsic parameters")
     print("Camera matrix: K =")
     print(K)
     print("D =")

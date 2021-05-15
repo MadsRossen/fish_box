@@ -1,5 +1,6 @@
 import cv2
 
+import matplotlib.pyplot as plt
 from basic_image_functions import crop, resizeImg, claheHSL
 from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
      loadImages
@@ -10,17 +11,47 @@ from calibration import undistortImg
 img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
 
 'Step 2: undistort image'
-img_undistorted = undistortImg(img, True)
+img_undistorted = undistortImg(img, False)
 
 'Step 3: Crop to ROI'
-img_cropped  =crop(img_undistorted)
+img_cropped = crop(img_undistorted, 900, 650, 500, 1500)
 
 'Step 4: Apply CLAHE'
-img_CLAHE = claheHSL(img_cropped)
+img_CLAHE = claheHSL(img_cropped, 2, (20,20))
 
-'Step 5: Apply CLAHE'
+'Step 5: Show pre-processing steps in one plot'
+# OpenCV loads pictures in BGR, but the this step is plotted in RGB:
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+img_undistorted_rgb = cv2.cvtColor(img_undistorted, cv2.COLOR_BGR2RGB)
+img_cropped_rgb = cv2.cvtColor(img_cropped, cv2.COLOR_BGR2RGB)
+img_CLAHE_rgb = cv2.cvtColor(img_CLAHE, cv2.COLOR_BGR2RGB)
+
+# Create subplots
+fig = plt.figure()
+fig.suptitle('Steps in pre-processing', fontsize=16)
+
+plt.title('Original image')
+plt.subplot(2, 2, 1)
+plt.imshow(img_rgb)
+
+plt.title('Undistorted image')
+plt.subplot(2, 2, 2)
+plt.imshow(img_undistorted_rgb)
+
+plt.title('ROI')
+plt.subplot(2, 2, 3)
+plt.imshow(img_cropped_rgb)
+
+plt.title('ROI with CLAHE applied')
+plt.subplot(2, 2, 4)
+plt.imshow(img_CLAHE_rgb)
+
+plt.show()
+
+'Step 6: Segment'
 
 
+'Step 7: Classify'
 # load images into memory
 images, names = loadImages(True, 10)
 
