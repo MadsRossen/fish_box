@@ -4,14 +4,13 @@ import os
 
 from Kasperfunctions import resizeImg, crop
 
-
 def loadImages(edit_images, scaling_percentage=30):
     '''
     Loads all the images inside a file.
 
     :return: All the images in a list and its file names.
     '''
-    path = "fishpics/direct2pic"
+    path = "fish_pics/direct2pic"
     images = []
     class_names = []
     img_list = os.listdir(path)

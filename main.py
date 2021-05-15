@@ -5,6 +5,19 @@ from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_bloo
      loadImages
 from mathias_functions import isolate_img
 
+'Step 1: Load image'
+img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
+
+'Step 2: undistort image'
+
+
+'Step 3: Crop to ROI'
+
+'Step 4: Apply CLAHE'
+
+'Step 5: Apply CLAHE'
+
+
 # load images into memory
 images, names = loadImages(True, 10)
 
