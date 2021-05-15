@@ -1,11 +1,9 @@
 import cv2
-
 import matplotlib.pyplot as plt
-from basic_image_functions import crop, resizeImg, claheHSL
-from BenjaminFunctions import replaceHighlights, equalizeColoredImage, find_blood_damage, morphological_trans, \
-     loadImages
-from mathias_functions import isolate_img
+
+from basic_image_functions import crop, claheHSL
 from calibration import undistortImg
+from mathias_functions import convert_RGB_to_HSV, smallrange_isolate_img_content, detect_bloodspots, isolate_img
 
 'Step 1: Load image'
 img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
@@ -15,7 +13,6 @@ img_undistorted = undistortImg(img, False)
 
 'Step 3: Crop to ROI'
 img_cropped = crop(img_undistorted, 900, 650, 500, 1500)
-from mathias_functions import isolate_img, save_img, canny_edge_detection, grayScaling, convert_RGB_to_HSV, grayScaling8bit, erosion, grassfire_transform, creating_mask_input_hsv, grassfire_v2, smallrange_isolate_img, smallrange_isolate_img_content, detect_bloodspots
 
 'Step 4: Apply CLAHE'
 img_CLAHE = claheHSL(img_cropped, 2, (20,20))
@@ -50,9 +47,14 @@ plt.imshow(img_CLAHE_rgb)
 plt.show()
 
 'Step 6: Segment'
+img_HSV = cv2.cvtColor(img_CLAHE, cv2.COLOR_BGR2HSV)
+img_segmented_cod = smallrange_isolate_img_content(img_CLAHE, img_HSV)
+cv2.imshow('img_HSV', img_HSV)
 
+cv2.imshow('img_segmented_cod',img_segmented_cod)
 
 'Step 7: Classify'
+'''
 # load images into memory
 #images, names = loadImages("fishpics/direct2pic", True, True, 40)
 
@@ -124,3 +126,4 @@ detect_bloodspots(segmentedimg, hsv_img_segmented)
 #cv2.imshow("Final", final)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+'''
