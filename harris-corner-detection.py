@@ -10,7 +10,7 @@ img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 # Parameters
 windowSize = 3  
 k = 0.06 # Parameter between 0.04 - 0.06
-threshold = 12000
+threshold = 10000
 
 CheckPoints = 54
 
@@ -37,7 +37,6 @@ Ixy = Iy*Ix
 Iyy = Iy**2
 
 CornerCoordinate = []
-
 # Fra offset til y_size og offset til x_size
 print("Start running corner detection . . . ")
 
@@ -68,7 +67,7 @@ for y in range(offset, y_size):
         r = det - k * (trace**2)
 
         if bool(test):   
-            CornerCoordinate.append([x, y, Ix[x,y], Iy[x,y], r])
+            CornerCoordinate.append([x, y, Ix[y,x], Iy[y,x], r])
 
         if r > threshold:
             nul.itemset((y, x), 255)
@@ -76,38 +75,39 @@ for y in range(offset, y_size):
             img.itemset((y, x, 1), 255)
             img.itemset((y, x, 2), 0)
 
-print("Starting GrassFire . . .")
-Objects = gf.GrassFire(nul)
-
-# Sort the list by the mass of objects
-print("Number of objects: ", len(Objects))
-ObjectsH = sorted(Objects, key=len, reverse=True)
-
-CornerList = []
-
-# Take the 54 biggest objects and make a circle around it. 54 = number of points at the checkerboard
-for h in range(CheckPoints):
-    corner = np.array(ObjectsH[h])
-    y_min = min(corner[:,0])
-    y_max = max(corner[:,0])
-    x_min = min(corner[:,1])
-    x_max = max(corner[:,1])
-
-    # Calculate the center of mass for each object
-    xbb = int((x_min + x_max)/2)
-    ybb = int((y_min + y_max)/2)
-
-    img.itemset((ybb, xbb, 0), 255)
-    img.itemset((ybb, xbb, 1), 0)
-    img.itemset((ybb, xbb, 2), 0)
-
-    CornerList.append([ybb, xbb])
-
-    # Draw a circle around the center
-    cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
     
 # Create a list of corner coordinates
 if bool(CornerCor):
+    print("Starting GrassFire . . .")
+    Objects = gf.GrassFire(nul)
+
+    # Sort the list by the mass of objects
+    print("Number of objects: ", len(Objects))
+    ObjectsH = sorted(Objects, key=len, reverse=True)
+
+    CornerList = []
+
+    # Take the 54 biggest objects and make a circle around it. 54 = number of points at the checkerboard
+    for h in range(CheckPoints):
+        corner = np.array(ObjectsH[h])
+        y_min = min(corner[:,0])
+        y_max = max(corner[:,0])
+        x_min = min(corner[:,1])
+        x_max = max(corner[:,1])
+
+        # Calculate the center of mass for each object
+        xbb = int((x_min + x_max)/2)
+        ybb = int((y_min + y_max)/2)
+
+        img.itemset((ybb, xbb, 0), 255)
+        img.itemset((ybb, xbb, 1), 0)
+        img.itemset((ybb, xbb, 2), 0)
+
+        CornerList.append([ybb, xbb])
+
+        # Draw a circle around the center
+        cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
+    
     print('Creating cornerlist file')
     CornerFileList = open('CornerFileList', 'w')
     CornerFileList.write('x, \t y \n')
