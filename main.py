@@ -5,17 +5,20 @@ from basic_image_functions import crop, claheHSL
 from calibration import undistortImg
 from mathias_functions import convert_RGB_to_HSV, smallrange_isolate_img_content, detect_bloodspots, isolate_img
 
+save_steps     = True
+recalibrate    = False
+
 'Step 1: Load image'
-img = cv2.imread(f"fish_pics/GOPR1911.JPG", 1)
+img = cv2.imread("fish_pics/step1_GOPR1911.JPG", 1)
 
 'Step 2: undistort image'
-img_undistorted = undistortImg(img, False)
+img_undistorted = undistortImg(img, recalibrate)
 
 'Step 3: Crop to ROI'
 img_cropped = crop(img_undistorted, 900, 650, 500, 1500)
 
 'Step 4: Apply CLAHE'
-img_CLAHE = claheHSL(img_cropped, 2, (20,20))
+img_CLAHE = claheHSL(img_cropped, 4, (20,20))
 
 'Step 5: Show pre-processing steps in one plot'
 # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
@@ -49,11 +52,20 @@ plt.show()
 'Step 6: Segment'
 img_HSV = cv2.cvtColor(img_CLAHE, cv2.COLOR_BGR2HSV)
 img_segmented_cod = smallrange_isolate_img_content(img_CLAHE, img_HSV)
-cv2.imshow('img_HSV', img_HSV)
 
 cv2.imshow('img_segmented_cod',img_segmented_cod)
 
 'Step 7: Classify'
+
+'Step ??: Save output image for inspection by biologists'
+
+'Step ??: Save all images in step categories'
+if save_steps == True:
+     cv2.imwrite('fish_pics/step2.JPG',img_undistorted)
+     cv2.imwrite('fish_pics/step3.JPG',img_cropped)
+     cv2.imwrite('fish_pics/step4.JPG',img_cropped)
+     cv2.imwrite('fish_pics/step6.JPG',img_segmented_cod)
+
 '''
 # load images into memory
 #images, names = loadImages("fishpics/direct2pic", True, True, 40)
