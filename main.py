@@ -2,50 +2,42 @@ import cv2
 import functions as ft
 import yamlLoader as yamlL
 import extremeImageProcessing as eip
-import numpy as np
-
-from scipy import ndimage
 
 # Load in yaml data from the file
 yaml_data = yamlL.yaml_loader("parameters.yaml")
 
 # Load in the yaml parameters from the data
-kernels, checkerboard_dimensions, paths = yamlL.setup_parameters(yaml_data)
+kernels, checkerboard_dimensions, paths, clahe = yamlL.setup_parameters(yaml_data)
 
-# load Fish images into memory
-images, names = ft.loadImages(paths[2][1], True, False, 40)
+# load Fish images
+images, names = ft.loadImages(paths[0][1], False, False, 40)
 
-# Load calibration images
-img_cali, names_cali = ft.loadImages(paths[1][1], True, False, 40)
+# Load checkerboard images
+img_cali, names_cali = ft.loadImages(paths[1][1], False, False, 40)
 
-# load Fish images into memory
-# images_histo_test, names_histo_test = ft.loadImages(paths[2][1], True, False, 40)
+# Calibrate camera and undistort images
+# fish_cali = ft.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
 
-# Rapport images, Histogram
-# img = ft.images_for_rapport(images_histo_test)
-
-# Calibrate camera
-fish_cali = ft.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
-
-# Calibrated fish images for spec remove
-# left = fish_cali[0]
-# right = fish_cali[1]
-
-# Specular highlights
-# img_spec_rem = [ft.replaceHighlights(left, right, 225), ft.replaceHighlights(right, left, 225)]
+# Crop to ROI
+cropped_images = eip.crop(images, 700, 450, 600, 2200)
 
 # Threshold to create a mask for each image
-# masks = eip.findInRange(img_spec_rem)
-masks = eip.findInRange(fish_cali)
+# masks = eip.findInRange(fish_cali) - Might need to get removed
+
+# Threshold to create a mask for each image
+masks, segmented_images = ft.segment_cod(cropped_images, clahe[0][1], clahe[1][1], False)
+
+# Bloodspot detection
+# blodspot_img = ft.detect_bloodspots()      Not done yet
 
 # Get the contours
-contour = ft.find_contours(masks, fish_cali)
+contour = ft.find_contours(masks, cropped_images)
 
 # Find contours middle point
-xcm, ycm = ft.contour_MOC(fish_cali, contour)
+xcm, ycm = ft.contour_MOC(cropped_images, contour)
 
 # Raytracing
-rot_img = ft.rotateImages(fish_cali, xcm, ycm, contour)
+rot_img = ft.rotateImages(cropped_images, xcm, ycm, contour)
 
 # display images and it's names
 #cv2.imshow(f"Left: {names[0]}", left)
