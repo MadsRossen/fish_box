@@ -18,7 +18,7 @@ def doClaheLAB2(null):
 
 
 def normHistEqualizeHLS(img):
-    fiskHLS1 = img
+    fiskHLS1 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     LChannel = fiskHLS1[:,:,1]
     HistEqualize = cv2.equalizeHist(LChannel)
     fiskHLS1[:,:,1] = HistEqualize

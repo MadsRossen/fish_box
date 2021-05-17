@@ -1,7 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 
-from basic_image_functions import crop, claheHSL
+from basic_image_functions import crop, claheHSL, normHistEqualizeHLS
 from calibration import undistortImg
 from mathias_functions import convert_RGB_to_HSV, smallrange_isolate_img_content, detect_bloodspots, isolate_img
 
@@ -9,16 +9,17 @@ save_steps     = True
 recalibrate    = False
 
 'Step 1: Load image'
-img = cv2.imread("fish_pics/step1_GOPR1911.JPG", 1)
+img = cv2.imread("fish_pics/step1_haandholdt_closeup_GOPR1886.JPG", 1)
 
 'Step 2: undistort image'
 img_undistorted = undistortImg(img, recalibrate)
 
 'Step 3: Crop to ROI'
-img_cropped = crop(img_undistorted, 900, 650, 500, 1500)
+img_cropped = crop(img_undistorted, 800, 650, 500, 2000)
+#img_cropped = crop(img_undistorted, 900, 650, 500, 1500)
 
 'Step 4: Apply CLAHE'
-img_CLAHE = claheHSL(img_cropped, 4, (20,20))
+img_CLAHE = claheHSL(img_cropped, 1.5, (20,20))
 
 'Step 5: Show pre-processing steps in one plot'
 # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
@@ -63,7 +64,7 @@ cv2.imshow('img_segmented_cod',img_segmented_cod)
 if save_steps == True:
      cv2.imwrite('fish_pics/step2.JPG',img_undistorted)
      cv2.imwrite('fish_pics/step3.JPG',img_cropped)
-     cv2.imwrite('fish_pics/step4.JPG',img_cropped)
+     cv2.imwrite('fish_pics/step4.JPG',img_CLAHEq)
      cv2.imwrite('fish_pics/step6.JPG',img_segmented_cod)
 
 '''
