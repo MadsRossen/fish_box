@@ -240,10 +240,11 @@ def open_close_trackbars():
     return kernel_val_open_val, kernel_val_close_val
 
 
-def find_contours(masks, images, change_kernel=False):
+def find_contours(masks, images, change_kernel=False, show_img=False):
     """
     Returns the biggest contour for a list of images.
 
+    :param show_img: Weather or not to display the morphed images
     :param change_kernel: Changes weather or not to change the kernels by trackbars. If left false, it will use the
     default parameters 5 and 7 for open and close respectively
     :param masks: Masks to find contours of
@@ -286,8 +287,9 @@ def find_contours(masks, images, change_kernel=False):
             if change_kernel:
                 cv2.imshow("Adjust_Hue_Satuation_Value", closing)
 
-            cv2.imshow("Mask", n)
-            cv2.imshow("Res", res)
+            if show_img:
+                cv2.imshow("Mask", n)
+                cv2.imshow("Res", res)
 
             key = cv2.waitKey(1)
             if key == 27 or change_kernel is False:

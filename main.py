@@ -2,6 +2,10 @@ import cv2
 import functions as ft
 import yamlLoader as yamlL
 import extremeImageProcessing as eip
+import time
+
+# Check the runtime
+start_time = time.time()
 
 # Load in yaml data from the file
 yaml_data = yamlL.yaml_loader("parameters.yaml")
@@ -16,7 +20,7 @@ images, names = ft.loadImages(paths[0][1], False, False, 40)
 img_cali, names_cali = ft.loadImages(paths[1][1], False, False, 40)
 
 # Calibrate camera and undistort images
-# fish_cali = ft.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
+fish_cali = ft.checkerboard_calibrate(checkerboard_dimensions, images, img_cali, False)
 
 # Crop to ROI
 cropped_images = eip.crop(images, 700, 450, 600, 2200)
@@ -38,6 +42,9 @@ xcm, ycm = ft.contour_MOC(cropped_images, contour)
 
 # Raytracing
 rot_img = ft.rotateImages(cropped_images, xcm, ycm, contour)
+
+# Print runtime
+print("Execution time: ","--- %s seconds ---" % (time.time() - start_time))
 
 # display images and it's names
 #cv2.imshow(f"Left: {names[0]}", left)
