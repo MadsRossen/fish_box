@@ -508,18 +508,26 @@ def sobel():
     return 0
 """
 
-def images_for_rapport():
-    # Load the image
-    img = cv2.imread("fishpics/Other/Fish_Cropped.PNG", cv2.IMREAD_COLOR)
+# Histogram check
+def images_for_rapport(images):
+    equalized_images = []
+    image = 0
+    for n in images:
+        # Equalized images
+        gray = cv2.cvtColor(n, cv2.COLOR_BGR2GRAY)
+        equalize = cv2.equalizeHist(gray)
+        equalized_images.append(equalize)
 
-    # Check if image is loaded fine
-    if img is None:
-        print('Error opening image: ' + sys.argv[0])
-        return -1
+        # Plotting
+        fig, axs = plt.subplots(2)
+        fig.suptitle('Vertically stacked subplots')
+        axs[0].hist(n.ravel(), 256, [0, 256])
+        axs[1].hist(equalize.ravel(), 256, [0, 256])
+        cv2.imshow(f"Image Equalized: {image}", equalize)
+        cv2.imshow(f"Image Not Equalized: {image}", gray)
+        plt.show()
 
-    threshold = isolate_img(img)
-
-    cv2.imshow("Adjust_Hue_Satuation_Value", threshold)
-    cv2.waitKey(0)
+        image += 1
+        cv2.destroyAllWindows()
 
     return 0

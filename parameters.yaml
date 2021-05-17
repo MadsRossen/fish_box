@@ -9,3 +9,4 @@ checkerboard_dimensions:
 paths:
   fish: "fishpics/direct2pic"
   checkerboard_calibration: "fishpics/CheckerBoards"
+  fish_histogram_test: "fishpics/Test11"
