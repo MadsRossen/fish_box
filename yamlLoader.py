@@ -32,6 +32,7 @@ def setup_parameters(data_yaml):
     kernels = []
     checkerboard_dimensions = []
     paths = []
+    clahe = []
 
     # Get the different parameters
     kernels_data = data_yaml.get('kernels')
@@ -52,6 +53,12 @@ def setup_parameters(data_yaml):
         paths.append(paths_c)
     print(paths)
 
+    clahe_data = data_yaml.get('clahe')
+    for clipLimit, tileGridSize in clahe_data.items():
+        clahe_c = [clipLimit, tileGridSize]
+        clahe.append(clahe_c)
+    print(clahe)
+
     print("Done setting up the parameters!")
 
-    return kernels, checkerboard_dimensions, paths
+    return kernels, checkerboard_dimensions, paths, clahe

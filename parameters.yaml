@@ -7,5 +7,10 @@ checkerboard_dimensions:
   y: 6
 
 paths:
-  fish: "fishpics/direct2pic"
+  fish: "fishpics/NewFish"
   checkerboard_calibration: "fishpics/CheckerBoards"
+  fish_histogram_test: "fishpics/Test11"
+
+clahe:
+  clipLimit: 2
+  tileGridSize: !!python/tuple [20, 20]

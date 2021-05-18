@@ -51,6 +51,17 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     return images, class_names
 
 
+def save_img(img):
+    out_folder_processed_images_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"    # Make into Yaml parameter path
+    count = 0
+    if len(img) < 1:
+        for n in img:
+            count = count+1
+            cv2.imwrite(out_folder_processed_images_path+f"\\fish{count}.jpg", n)
+    else:
+        cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
+
+
 def replaceHighlights(main_img, spec_img, limit):
     """
     This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
@@ -93,6 +104,17 @@ def replaceHighlights(main_img, spec_img, limit):
     print("Done replacing the highlights!")
 
     return img_main_cop
+
+
+def claheHSL(img, clipLimit, tileGridSize):
+    fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+    LChannelHLS = fiskHLS2[:, :, 1]
+    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+    claheLchannel1 = clahe.apply(LChannelHLS)
+    fiskHLS2[:, :, 1] = claheLchannel1
+    fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
+
+    return fiskClahe
 
 
 def resizeImg(img, scale_percent):
@@ -193,10 +215,38 @@ def find_biggest_contour(cnt):
     return biggest_cnt
 
 
-def find_contours(masks, images):
+# Used for the trackbars
+def nothing(x):
+    pass
+
+
+def open_close_trackbars():
+    cv2.namedWindow("Adjust_Hue_Satuation_Value")
+    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+
+    kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+    kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+
+    # Make sure it's only uneven numbers for the kernels
+    if kernel_val_open_val % 2 == 0:
+        cv2.setTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value", kernel_val_open_val + 1)
+        kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+
+    if kernel_val_close_val % 2 == 0:
+        cv2.setTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value", kernel_val_close_val + 1)
+        kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+
+    return kernel_val_open_val, kernel_val_close_val
+
+
+def find_contours(masks, images, change_kernel=False, show_img=False):
     """
     Returns the biggest contour for a list of images.
 
+    :param show_img: Weather or not to display the morphed images
+    :param change_kernel: Changes weather or not to change the kernels by trackbars. If left false, it will use the
+    default parameters 5 and 7 for open and close respectively
     :param masks: Masks to find contours of
     :param images: A list of images to find contours inside
     :return: A list with the biggest contour for each image
@@ -204,37 +254,25 @@ def find_contours(masks, images):
 
     print("Finding contours...")
 
-    def nothing(x):
-        pass
-
-    cv2.namedWindow("Adjust_Hue_Satuation_Value")
-    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
-    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
-
+    old_open_val, old_closes_val = 0, 0
     contours = []
     image_n = 0
-    old_open_val = 0
-    old_closes_val = 0
+    opening = None
+    closing = None
     for n in masks:
         while True:
-            kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
-            kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
-
-            # Make sure it's only uneven numbers for the kernels
-            if kernel_val_open_val % 2 == 0:
-                cv2.setTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value", kernel_val_open_val + 1)
-                kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
-
-            if kernel_val_close_val % 2 == 0:
-                cv2.setTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value", kernel_val_close_val + 1)
-                kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+            # If we wanna change the kernel by trackbar
+            if change_kernel:
+                kernel_val_open_val, kernel_val_close_val = open_close_trackbars()
+            else:
+                kernel_val_open_val, kernel_val_close_val = 5, 7
 
             # Make kernels for each morph type
             kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
             kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
 
             # Only use opening and closing when the slider is moved instead of every frame
-            if old_open_val != kernel_val_open_val or old_closes_val != kernel_val_close_val:
+            if old_open_val != kernel_val_open_val or old_closes_val != kernel_val_close_val or change_kernel is False:
                 opening = eip.morph_open(n, kernel_open)
                 closing = eip.morph_close(opening, kernel_close)
                 old_open_val = kernel_val_open_val
@@ -243,17 +281,21 @@ def find_contours(masks, images):
             # To see how much of the fish we are keeping
             if closing is not None:
                 res = eip.bitwise_and(images[image_n], closing)
+            else:
+                warnings.warn("The closing or open operation is None!")
 
-            cv2.imshow("Adjust_Hue_Satuation_Value", closing)
-            cv2.imshow("Mask", n)
-            cv2.imshow("Res", res)
+            if change_kernel:
+                cv2.imshow("Adjust_Hue_Satuation_Value", closing)
+
+            if show_img:
+                cv2.imshow("Mask", n)
+                cv2.imshow("Res", res)
 
             key = cv2.waitKey(1)
-
-            if key == 27:
+            if key == 27 or change_kernel is False:
                 break
 
-        # Find contours
+        # Find contours, implement grassfire algorithm
         contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         print(f"Contours length:{len(contours)}")
@@ -468,58 +510,123 @@ def isolate_img(resized_input_image):
     return res
 
 
-"""
-def sobel():
-    scale = 1
-    delta = 0
-    ddepth = cv2.CV_16S
+def segment_cod(images, cahe_clipSize, titleSize, show_images=False):
 
-    if len(sys.argv) < 1:
-        print('Not enough parameters')
-        print('Usage:\nmorph_lines_detection.py < path_to_image >')
-        return -1
-    # Load the image
-    src = cv2.imread("fishpics/Other/Fish_Cropped.PNG", cv2.IMREAD_COLOR)
-    # Check if image is loaded fine
-    if src is None:
-        print('Error opening image: ' + sys.argv[0])
-        return -1
+    print("Started segmenting the cods!")
 
-    src = cv2.GaussianBlur(src, (3, 3), 0)
+    inRangeImages = []
+    segmentedImages = []
 
-    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    # def nothing(x):
+    #    pass
 
-    grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
-    grad_y = cv2.Sobel(gray, ddepth, 0, 1, ksize=3, scale=scale, delta=delta, borderType=cv2.BORDER_DEFAULT)
+    # cv2.namedWindow("res")
+    # cv2.createTrackbar("lowerHseg", "res", 0, 255, nothing)
+    # cv2.createTrackbar("higherHseg", "res", 0, 255, nothing)
+    # cv2.createTrackbar("lowerSseg", "res", 0, 255, nothing)
+    # cv2.createTrackbar("higherSseg", "res", 0, 255, nothing)
 
-    abs_grad_x = cv2.convertScaleAbs(grad_x)
-    abs_grad_y = cv2.convertScaleAbs(grad_y)
+    for n in images:
+        while True:
+            clahe = claheHSL(n, cahe_clipSize, titleSize)
+            # Check if clahe works by converting it back to BGR and check if it looks the same as clahe
+            # is clahe BRG or RGB or something third?
+            hsv_img = cv2.cvtColor(clahe, cv2.COLOR_BGR2HSV)
 
-    grad = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+            # lowerHseg = cv2.getTrackbarPos("lowerHseg", "res")
+            # higherHseg = cv2.getTrackbarPos("higherHseg", "res")
+            # lowerSseg = cv2.getTrackbarPos("lowerSseg", "res")
+            # higherSseg = cv2.getTrackbarPos("higherSseg", "res")
 
-    cv2.imshow("Sobel Edge Detector final", grad)
-    cv2.imwrite('fishpics/Other/Total.jpg', grad)
-    cv2.imshow("X", abs_grad_x)
-    cv2.imwrite('fishpics/Other/x.jpg', abs_grad_x)
-    cv2.imshow("Y", abs_grad_y)
-    cv2.imwrite('fishpics/Other/y.jpg', abs_grad_y)
-    cv2.waitKey(0)
+            # lowerH = (lowerHseg, higherHseg)
+            # lowerV = (lowerSseg, higherSseg)
+            lowerH = (90, 128)
+            lowerV = (0, 40)
+            h, w, ch = hsv_img.shape[:3]
 
-    return 0
-"""
+            mask = np.zeros((h, w), np.uint8)
+            # We start segmenting
+            for y in range(h):
+                for x in range(w):
+                    H = hsv_img.item(y, x, 0)
+                    V = hsv_img.item(y, x, 2)
+                    # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
+                    if lowerH[1] > H > lowerH[0]:
+                        mask.itemset((y, x), 0)
+                    # If Hue lies in the lowerValRange(black value range) we want to segment it out
+                    elif lowerV[1] > V > lowerV[0]:
+                        mask.itemset((y, x), 0)
+                    else:
+                        mask.itemset((y, x), 255)
 
-def images_for_rapport():
-    # Load the image
-    img = cv2.imread("fishpics/Other/Fish_Cropped.PNG", cv2.IMREAD_COLOR)
+            # NEEDS TO BE CHANGED TO OUR OWN BITWISE
+            segmentedImg = cv2.bitwise_and(clahe, clahe, mask=mask)
 
-    # Check if image is loaded fine
-    if img is None:
-        print('Error opening image: ' + sys.argv[0])
-        return -1
+            if show_images:
+                cv2.imshow("res", segmentedImg)
+                cv2.imshow("mask", mask)
 
-    threshold = isolate_img(img)
+                key = cv2.waitKey(1)
+                if key == 27:
+                    break
 
-    cv2.imshow("Adjust_Hue_Satuation_Value", threshold)
-    cv2.waitKey(0)
+            break
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmentedImg)
+
+    print("Finished segmenting the cods!")
+
+    return inRangeImages, segmentedImages
+
+
+def detect_bloodspots(hsv_img):
+    lowerH = (80, 125)
+    lowerS = (153, 204)
+    lowerv = (115, 140)
+
+    h, w, ch = hsv_img.shape[:3]
+
+    segmentedImg = np.zeros((h, w), np.uint8)
+    # We start segmenting
+    for y in range(h):
+        for x in range(w):
+            H = hsv_img.item(y, x, 0)
+            S = hsv_img.item(y, x, 1)
+            V = hsv_img.item(y, x, 2)
+            # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
+            if lowerH[1] > H > lowerH[0]:
+                segmentedImg.itemset((y, x), 0)
+            # If Hue lies in the lowerValRange(black value range) we want to segment it out
+            elif lowerv[1] > V > lowerv[0]:
+                segmentedImg.itemset((y, x), 0)
+            elif lowerS[1] > S > lowerS[0]:
+                segmentedImg.itemset((y, x), 0)
+            else:
+                segmentedImg.itemset((y, x), 255)
+
+
+# Histogram check
+def images_for_rapport(images):
+    equalized_images = []
+    image = 0
+    for n in images:
+        # Equalized images
+        gray = cv2.cvtColor(n, cv2.COLOR_BGR2GRAY)
+        equalize = cv2.equalizeHist(gray)
+        equalized_images.append(equalize)
+
+        # Plotting
+        fig, axs = plt.subplots(2)
+        fig.suptitle('Vertically stacked subplots')
+        axs[0].hist(n.ravel(), 256, [0, 256])
+        axs[1].hist(equalize.ravel(), 256, [0, 256])
+        cv2.imshow(f"Image Equalized: {image}", equalize)
+        cv2.imshow(f"Image Not Equalized: {image}", gray)
+        plt.show()
+
+        image += 1
+        cv2.destroyAllWindows()
 
     return 0

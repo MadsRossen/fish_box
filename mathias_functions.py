@@ -17,6 +17,8 @@ def save_img(img):
         cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
 
 def detect_bloodspots(img, hsv_img):
+
+    boolean_bloodspot = False
     marked_bloodspots = copy.copy(img)
 
     # HSV values found by empirical tests:
@@ -29,14 +31,10 @@ def detect_bloodspots(img, hsv_img):
 
     mask = np.zeros((h, w), np.uint8)
 
-    frame_threshold1 = cv2.inRange(hsv_img, (bloodspotHue_start[0], bloodspot_Saturation[0], bloodspot_Value[0]),
-                                   (bloodspotHue_start[1], bloodspot_Saturation[1], bloodspot_Value[1]))
-    frame_threshold2 = cv2.inRange(hsv_img, (bloodspotHue_end[0], bloodspot_Saturation[0], bloodspot_Value[0]),
-                                   (bloodspotHue_end[1], bloodspot_Saturation[1], bloodspot_Value[1]))
+    frame_threshold1 = cv2.inRange(hsv_img, (0, 70, 50), (12, 255, 255))
+    frame_threshold2 = cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
 
-    frame_threshold = cv2.inRange(hsv_img, (0, 110, 135), (12, 255, 255))
-
-    mask_bloodspots = frame_threshold
+    mask_bloodspots = frame_threshold1 | frame_threshold2
 
     segmented_blodspots = cv2.bitwise_and(img, img, mask=mask_bloodspots)
 
@@ -45,20 +43,21 @@ def detect_bloodspots(img, hsv_img):
     # Find contours and draw contour + set tag
     for cont in contours:
         area = cv2.contourArea(cont)
-        if area > 200:
+        if area > 100:
             x, y, w, h = cv2.boundingRect(cont)
             # Create tag
             cv2.putText(marked_bloodspots, 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
             # Draw green contour
             cv2.drawContours(marked_bloodspots, [cont], -1, (0,255,0), 2)
+            boolean_bloodspot = True
 
-    return mask, segmented_blodspots, marked_bloodspots
+    return mask, segmented_blodspots, marked_bloodspots, boolean_bloodspot
 
 def smallrange_isolate_img_content(img, hsv_img):
 
-    lowerH = (80, 125)
+    lowerH = (101, 113)
 
-    lowerv = (0, 45)
+    lowerv = (0, 0)
 
     h, w, ch = hsv_img.shape[:3]
 
@@ -73,8 +72,8 @@ def smallrange_isolate_img_content(img, hsv_img):
             if lowerH[1] > H > lowerH[0]:
                 mask.itemset((y, x), 0)
             # If Hue lies in the lowerValRange(black value range) we want to segment it out
-            elif lowerv[1] > V > lowerv[0]:
-                mask.itemset((y, x), 0)
+            #elif lowerv[1] > V > lowerv[0]:
+            #    mask.itemset((y, x), 0)
             else:
                 mask.itemset((y, x), 255)
 
