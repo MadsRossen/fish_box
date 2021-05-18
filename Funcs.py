@@ -63,21 +63,22 @@ def showCompariHist(img1,img2, stringImg1, stringImg2, mode):
     plt.ylabel('Number of pixels in percentage')
     plt.show()
 
-def calcOneChanHist(imageChannel):
+def calcHueChanHist(imageChannel):
     '''
     Calculates histogram for only one channel
     :param images:
     :return:
     '''
 
-    histSize = 256
-    imgHistogram = []
-    imgHistogram.append(cv2.calcHist([imageChannel], [0], None, [histSize], [0, histSize]))
+    histSize = 0
+    imgHistogram = (cv2.calcHist([imageChannel], [0], None, [180], [0, 180]))
+
 
     h1, w1 = imageChannel.shape
 
     # Normalize histograms
-    img1histrNorm = (imgHistograms / (h1 * w1)) * 100
+    pixelsTotal1 = h1 * w1
+    img1histrNorm = imgHistogram / pixelsTotal1
     plt.plot(img1histrNorm, color='orange')
 
     return img1histrNorm
@@ -123,7 +124,6 @@ def calcMeanHist(images):
 
     return img1histrNorm, mean_value
 
-
 def BGR2MeanGreyscale(img):
     """
     Function that will convert a BGR image to a mean valued greyscale image.
@@ -159,6 +159,3 @@ def imgMinusimg(img1, img2):
             greyscale_img1.itemset((y, x, 0), abs(img1.item(y, x, 0) - img2.item(y, x, 0)))
 
     return greyscale_img1
-
-
-

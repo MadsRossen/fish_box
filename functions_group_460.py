@@ -7,7 +7,7 @@ import yaml
 
 from matplotlib import pyplot as plt
 
-from basic_image_functions import resizeImg, crop
+from functions_openCV import resizeImg, crop
 from Kasperfunctions import resizeImg
 
 # A library that has a equalize matcher!

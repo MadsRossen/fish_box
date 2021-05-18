@@ -1,9 +1,9 @@
-import cv2
-import numpy as np
+import copy
 from random import randint
 
+import cv2
 import matplotlib.pyplot as plt
-import statistics as statistic
+import numpy as np
 
 def save_img(img):
 
@@ -15,47 +15,45 @@ def save_img(img):
             cv2.imwrite(out_folder_processed_images_path+f"\\fish{count}.jpg", n)
     else:
         cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
+
 def detect_bloodspots(img, hsv_img):
-    lowerH = (80, 125)
-    lowerS = (153, 204)
-    lowerv = (115, 140)
+    marked_bloodspots = copy.copy(img)
 
-    h, w, ch = hsv_img.shape[:3]
-from basic_image_functions import resizeImg, crop
+    # HSV values found by empirical tests:
+    bloodspotHue_start = (0, 12)
+    bloodspotHue_end = (170, 180)
+    bloodspot_Saturation = (120, 255)
+    bloodspot_Value = (200, 255)
 
-    segmentedImg = np.zeros((h, w), np.uint8)
-    # We start segmenting
-    for y in range(h):
-        for x in range(w):
-            H = hsv_img.item(y, x, 0)
-            S = hsv_img.item(y, x, 1)
-            V = hsv_img.item(y, x, 2)
-            # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
-            if lowerH[1] > H > lowerH[0]:
-                segmentedImg.itemset((y, x), 0)
-            # If Hue lies in the lowerValRange(black value range) we want to segment it out
-            elif lowerv[1] > V > lowerv[0]:
-                segmentedImg.itemset((y, x), 0)
-            elif lowerS[1] > S > lowerS[0]:
-                segmentedImg.itemset((y, x), 0)
-            else:
-                segmentedImg.itemset((y, x), 255)
-def save_img(img):
+    h, w, ch = hsv_img.shape
 
-    kernel1 = np.ones((3, 5), np.uint8)
-    kernel2 = np.ones((7, 7), np.uint8)
+    mask = np.zeros((h, w), np.uint8)
 
-    open1 = cv2.morphologyEx(segmentedImg, cv2.MORPH_OPEN, kernel1)
-    close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernel2)
+    frame_threshold1 = cv2.inRange(hsv_img, (bloodspotHue_start[0], bloodspot_Saturation[0], bloodspot_Value[0]),
+                                   (bloodspotHue_start[1], bloodspot_Saturation[1], bloodspot_Value[1]))
+    frame_threshold2 = cv2.inRange(hsv_img, (bloodspotHue_end[0], bloodspot_Saturation[0], bloodspot_Value[0]),
+                                   (bloodspotHue_end[1], bloodspot_Saturation[1], bloodspot_Value[1]))
 
-    res = cv2.bitwise_and(img, img, mask=close2)
-    cv2.imshow("res", res)
-    plt.imshow(segmentedImg, cmap="gray")
-    plt.show()
+    frame_threshold = cv2.inRange(hsv_img, (0, 110, 135), (12, 255, 255))
 
-    cv2.waitKey(0)
+    mask_bloodspots = frame_threshold
 
-    return segmentedImg
+    segmented_blodspots = cv2.bitwise_and(img, img, mask=mask_bloodspots)
+
+    contours, _ = cv2.findContours(mask_bloodspots, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Find contours and draw contour + set tag
+    for cont in contours:
+        area = cv2.contourArea(cont)
+        if area > 200:
+            x, y, w, h = cv2.boundingRect(cont)
+            # Create tag
+            cv2.putText(marked_bloodspots, 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
+            # Draw green contour
+            cv2.drawContours(marked_bloodspots, [cont], -1, (0,255,0), 2)
+
+    return mask, segmented_blodspots, marked_bloodspots
+
 def smallrange_isolate_img_content(img, hsv_img):
 
     lowerH = (80, 125)
@@ -64,36 +62,31 @@ def smallrange_isolate_img_content(img, hsv_img):
 
     h, w, ch = hsv_img.shape[:3]
 
-    segmentedImg = np.zeros((h, w), np.uint8)
+    mask = np.zeros((h, w), np.uint8)
     # We start segmenting
     for y in range(h):
         for x in range(w):
             H = hsv_img.item(y, x, 0)
             S = hsv_img.item(y, x, 1)
             V = hsv_img.item(y, x, 2)
-            # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
+            # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
             if lowerH[1] > H > lowerH[0]:
-                segmentedImg.itemset((y, x), 0)
+                mask.itemset((y, x), 0)
             # If Hue lies in the lowerValRange(black value range) we want to segment it out
             elif lowerv[1] > V > lowerv[0]:
-                segmentedImg.itemset((y, x), 0)
+                mask.itemset((y, x), 0)
             else:
-                segmentedImg.itemset((y, x), 255)
+                mask.itemset((y, x), 255)
 
     kernel1 = np.ones((3, 5), np.uint8)
     kernel2 = np.ones((7, 7), np.uint8)
 
-    open1 = cv2.morphologyEx(segmentedImg, cv2.MORPH_OPEN, kernel1)
+    open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel1)
     close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernel2)
 
-    res = cv2.bitwise_and(img, img, mask=close2)
-    cv2.imshow("res", res)
-    plt.imshow(segmentedImg, cmap="gray")
-    plt.show()
+    segmented_cod = cv2.bitwise_and(img, img, mask=close2)
 
-    cv2.waitKey(0)
-
-    return segmentedImg
+    return mask, segmented_cod
 
 def smallrange_isolate_img(hsv_img):
 
