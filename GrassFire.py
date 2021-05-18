@@ -1,5 +1,4 @@
 import copy
-from random import randint
 
 
 def GrassFire(img):

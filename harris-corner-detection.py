@@ -3,21 +3,22 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import GrassFire as gf
+import blur as bl
 
 filename = cv.imread("/Users/madsrossen/Documents/4. Semester/Projekt/code/images/fP0Im.jpg", 0)
 img = cv.cvtColor(filename, cv.COLOR_GRAY2RGB)
 
 # Parameters
 windowSize = 3  
-k = 0.06 # Parameter between 0.04 - 0.06
-threshold = 10000
+k = 0.04 # Parameter between 0.04 - 0.06
+threshold = 1000
 
 CheckPoints = 54
 
 # Til test af cornerbilleder set til true eller false:
 test = False
 # Få corner coordinate set til true eller false:
-CornerCor = False 
+CornerCor = True
 
 offset = int(windowSize/2)
 
@@ -27,7 +28,7 @@ y_size = filename.shape[0] - offset
 nul = np.zeros((img.shape[0], img.shape[1]), np.uint8)
 
 # mean blur
-blur = cv.blur(filename, (5, 5))
+blur = bl.blur(filename)
 
 # Partial differentiation hvor ** = ^2
 Iy, Ix = np.gradient(blur)
