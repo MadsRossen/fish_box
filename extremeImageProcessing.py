@@ -2,8 +2,7 @@ import numpy as np
 import cv2
 import warnings
 import glob
-
-from random import randint
+import copy
 
 
 def crop(images, y, x, height, width):
@@ -353,11 +352,14 @@ def undistortImg(distortedImg, recalibrate=False):
     return undist_image
 
 
-def grassfire_v2(mask):
-    h, w = mask.shape[:2]
+def grassFire(mask):
+    """ Only input binary images of 0 and 255 """
+    mask_copy = copy.copy(mask)
+
+    h, w = mask_copy.shape[:2]
     h = h-1
     w = w-1
-    grassfire = np.zeros_like(mask, dtype=np.uint8)
+
     save_array = []
     zero_array = []
     blob_array = []
@@ -365,44 +367,38 @@ def grassfire_v2(mask):
 
     for y in range(h):
         for x in range(w):
-            if mask[y][x] == 0 and x <= h:
-                zero_array.append(mask[y][x])
-            elif mask[y][x] == 0 and x >= w:
-                zero_array.append(mask[y][x])
+            if mask_copy.item(y, x) == 0 and x <= h:
+                zero_array.append(mask_copy.item(y, x))
+            elif mask_copy.item(y, x) == 0 and x >= w:
+                zero_array.append(mask_copy.item(y, x))
 
     # Looping if x == 1, and some pixels has to be burned
-            while mask[y][x] > 0 or len(save_array) > 0:
-                mask[y][x] = 0
+            while mask_copy.item(y, x) > 0 or len(save_array) > 0:
+                mask_copy.itemset((y, x), 0)
                 temp_cord.append([y, x])
-                if mask[y - 1][x] > 0:
+
+                if mask_copy.item(y - 1, x) > 0:
                     if [y - 1, x] not in save_array:
                         save_array.append([y - 1, x])
-                if mask[y][x - 1] > 0:
+
+                if mask_copy.item(y, x - 1) > 0:
                     if [y, x - 1] not in save_array:
                         save_array.append([y, x - 1])
-                if mask[y + 1][x] > 0:
+
+                if mask_copy.item(y + 1, x) > 0:
                     if [y + 1, x] not in save_array:
                         save_array.append([y + 1, x])
-                if mask[y][x + 1] > 0:
+
+                if mask_copy.item(y, x + 1) > 0:
                     if [y, x + 1] not in save_array:
                         save_array.append([y, x + 1])
-                if len(save_array)>0:
-                    y,x = save_array.pop()
+
+                if len(save_array) > 0:
+                    y, x = save_array.pop()
 
                 else:
-                    print("Burn is done")
                     blob_array.append(temp_cord)
                     temp_cord = []
                     break
-    maskColor = np.zeros((h,w, 3), np.uint8)
-    for blob in range(len(blob_array)):
-        B, G, R = randint(0, 255), randint(0, 255), randint(0, 255)
-        for cord in blob_array[blob]:
-            y, x = cord
-            maskColor[y][x][0] = B
-            maskColor[y][x][1] = G
-            maskColor[y][x][2] = R
-    cv2.imshow("grasfire", maskColor)
-    cv2.waitKey(0)
 
-    return 0
+    return blob_array

@@ -32,7 +32,7 @@ cropped_images = eip.crop(images, 700, 450, 600, 2200)
 masks, segmented_images = ft.segment_cod(cropped_images, clahe[0][1], clahe[1][1], False)
 
 # Bloodspot detection
-# blodspot_img = ft.detect_bloodspots()      Not done yet
+# blodspot_img = ft.detect_bloodspots()
 
 # Get the contours
 contour = ft.find_contours(masks, cropped_images)

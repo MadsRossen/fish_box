@@ -296,8 +296,10 @@ def find_contours(masks, images, change_kernel=False, show_img=False):
                 break
 
         # Find contours, implement grassfire algorithm
-        contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
+        # contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        print("Grassfire running...")
+        contours_c = eip.grassFire(closing)
+        print("Grassfire done!")
         print(f"Contours length:{len(contours)}")
 
         # Getting the biggest contour which is always the fish
@@ -460,56 +462,6 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
         return images_distort
 
 
-def isolate_img(resized_input_image):
-    """
-    Returns the image of which pixels was in range of the selected HSV values.
-
-    :param resized_input_image: The image to find pixels in range of the HSV values
-    :return: A mask of the isolated pixels
-    """
-
-    hsv_image = eip.convert_RGB_to_HSV(resized_input_image)
-
-    def nothing(x):
-        pass
-
-    cv2.namedWindow("Adjust_Hue_Satuation_Value")
-    cv2.createTrackbar("lowerH", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-    cv2.createTrackbar("lowerS", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-    cv2.createTrackbar("lowerV", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-
-    cv2.createTrackbar("upperH", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-    cv2.createTrackbar("upperS", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-    cv2.createTrackbar("upperV", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
-
-    # while loop to adjust the HSV detection in the image.
-
-    while True:
-
-        lowerH = cv2.getTrackbarPos("lowerH", "Adjust_Hue_Satuation_Value")
-        lowerS = cv2.getTrackbarPos("lowerS", "Adjust_Hue_Satuation_Value")
-        lowerV = cv2.getTrackbarPos("lowerV", "Adjust_Hue_Satuation_Value")
-
-        upperH = cv2.getTrackbarPos("upperH", "Adjust_Hue_Satuation_Value")
-        upperS = cv2.getTrackbarPos("upperS", "Adjust_Hue_Satuation_Value")
-        upperV = cv2.getTrackbarPos("upperV", "Adjust_Hue_Satuation_Value")
-
-        lowerRange_blue = np.array([lowerH, lowerS, lowerV])
-        upperRange_blue = np.array([upperH, upperS, upperV])
-
-        mask = cv2.inRange(hsv_image, lowerRange_blue, upperRange_blue)
-
-        res = eip.bitwise_and(resized_input_image, mask)
-
-        cv2.imshow("res", res)
-        cv2.imshow("mask", mask)
-
-        key = cv2.waitKey(1)
-        if key == 27:
-            break
-    return res
-
-
 def segment_cod(images, cahe_clipSize, titleSize, show_images=False):
 
     print("Started segmenting the cods!")
@@ -531,6 +483,7 @@ def segment_cod(images, cahe_clipSize, titleSize, show_images=False):
             clahe = claheHSL(n, cahe_clipSize, titleSize)
             # Check if clahe works by converting it back to BGR and check if it looks the same as clahe
             # is clahe BRG or RGB or something third?
+            # USE OWN FUNCTION
             hsv_img = cv2.cvtColor(clahe, cv2.COLOR_BGR2HSV)
 
             # lowerHseg = cv2.getTrackbarPos("lowerHseg", "res")
