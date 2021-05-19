@@ -2,6 +2,14 @@ kernels:
   open_kernel: 20
   close_kernel: 13
 
+calibration_parameters:
+  k_1: -0.2666
+  k_2: 0.0845
+  imgCenterX: 1441.64880195002
+  imgCenterY: 1126.65141577051
+  Fx: 1757.26695467940
+  Fy: 1743.87124082603
+
 checkerboard_dimensions:
   x: 9
   y: 6

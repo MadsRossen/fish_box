@@ -4,11 +4,23 @@ import os
 import math
 import warnings
 import extremeImageProcessing as eip
-import sys
 
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt  # --- Is this still used in final?
 # A library that has a equalize matcher!
-from skimage.exposure import match_histograms
+from skimage.exposure import match_histograms  # --- Is this still used in final?
+
+
+def user_input():
+    """
+    This function returns the users keyinput for Y and N.
+
+    :return: Y returns true, N returns false
+    """
+    key = cv2.waitKey(1)
+    if key == ord('y'):
+        return True
+    elif key == ord('n'):
+        return False
 
 
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
@@ -52,6 +64,11 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
 
 def save_img(img):
+    """
+    Saves image(s) in a file directory.
+
+    :param img: An image or an array of images to save in a file
+    """
     out_folder_processed_images_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"    # Make into Yaml parameter path
     count = 0
     if len(img) < 1:
@@ -202,10 +219,10 @@ def find_biggest_contour(cnt):
     :return: The biggest contour inside the list
     """
     print("Finding the biggest contours...")
-    biggest_area = 0
+    longest_list = 0
     biggest_cnt = None
     for n in cnt:
-        if cv2.contourArea(n) > biggest_area:
+        if cv2.contourArea(n) > longest_list:
             biggest_cnt = n
         else:
             continue
@@ -221,6 +238,11 @@ def nothing(x):
 
 
 def open_close_trackbars():
+    """
+    This function allows for kernel value editing with trackbars in find_contours.
+
+    :return: Kernel values for open and close
+    """
     cv2.namedWindow("Adjust_Hue_Satuation_Value")
     cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
     cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
@@ -284,22 +306,23 @@ def find_contours(masks, images, change_kernel=False, show_img=False):
             else:
                 warnings.warn("The closing or open operation is None!")
 
+            # If the user wanna change the kernel values
             if change_kernel:
                 cv2.imshow("Adjust_Hue_Satuation_Value", closing)
 
+            # For debugging
             if show_img:
-                cv2.imshow("Mask", n)
+                cv2.imshow("Mask Closing", closing)
                 cv2.imshow("Res", res)
 
+            # Break the while loop if esc is pressed
             key = cv2.waitKey(1)
             if key == 27 or change_kernel is False:
                 break
 
         # Find contours, implement grassfire algorithm
-        # contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        print("Grassfire running...")
-        contours_c = eip.grassFire(closing)
-        print("Grassfire done!")
+        contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
         print(f"Contours length:{len(contours)}")
 
         # Getting the biggest contour which is always the fish
@@ -367,6 +390,7 @@ def rotateImages(rotate_img, xcm, ycm, contours):
         plt.subplot(int("1" + str(len(contours)) + str(nr + 1)))
         plt.bar(data[nr]["angle"], data[nr]["length"])
         plt.axis([-180, 180, 0, 500])
+        cv2.imshow("Traced", rotate_img[nr])
 
     print("Done raytracing!")
     plt.show()
@@ -462,78 +486,6 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
         return images_distort
 
 
-def segment_cod(images, cahe_clipSize, titleSize, show_images=False):
-
-    print("Started segmenting the cods!")
-
-    inRangeImages = []
-    segmentedImages = []
-
-    # def nothing(x):
-    #    pass
-
-    # cv2.namedWindow("res")
-    # cv2.createTrackbar("lowerHseg", "res", 0, 255, nothing)
-    # cv2.createTrackbar("higherHseg", "res", 0, 255, nothing)
-    # cv2.createTrackbar("lowerSseg", "res", 0, 255, nothing)
-    # cv2.createTrackbar("higherSseg", "res", 0, 255, nothing)
-
-    for n in images:
-        while True:
-            clahe = claheHSL(n, cahe_clipSize, titleSize)
-            # Check if clahe works by converting it back to BGR and check if it looks the same as clahe
-            # is clahe BRG or RGB or something third?
-            # USE OWN FUNCTION
-            hsv_img = cv2.cvtColor(clahe, cv2.COLOR_BGR2HSV)
-
-            # lowerHseg = cv2.getTrackbarPos("lowerHseg", "res")
-            # higherHseg = cv2.getTrackbarPos("higherHseg", "res")
-            # lowerSseg = cv2.getTrackbarPos("lowerSseg", "res")
-            # higherSseg = cv2.getTrackbarPos("higherSseg", "res")
-
-            # lowerH = (lowerHseg, higherHseg)
-            # lowerV = (lowerSseg, higherSseg)
-            lowerH = (90, 128)
-            lowerV = (0, 40)
-            h, w, ch = hsv_img.shape[:3]
-
-            mask = np.zeros((h, w), np.uint8)
-            # We start segmenting
-            for y in range(h):
-                for x in range(w):
-                    H = hsv_img.item(y, x, 0)
-                    V = hsv_img.item(y, x, 2)
-                    # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
-                    if lowerH[1] > H > lowerH[0]:
-                        mask.itemset((y, x), 0)
-                    # If Hue lies in the lowerValRange(black value range) we want to segment it out
-                    elif lowerV[1] > V > lowerV[0]:
-                        mask.itemset((y, x), 0)
-                    else:
-                        mask.itemset((y, x), 255)
-
-            # NEEDS TO BE CHANGED TO OUR OWN BITWISE
-            segmentedImg = cv2.bitwise_and(clahe, clahe, mask=mask)
-
-            if show_images:
-                cv2.imshow("res", segmentedImg)
-                cv2.imshow("mask", mask)
-
-                key = cv2.waitKey(1)
-                if key == 27:
-                    break
-
-            break
-
-        # add to lists
-        inRangeImages.append(mask)
-        segmentedImages.append(segmentedImg)
-
-    print("Finished segmenting the cods!")
-
-    return inRangeImages, segmentedImages
-
-
 def detect_bloodspots(hsv_img):
     lowerH = (80, 125)
     lowerS = (153, 204)
@@ -558,28 +510,3 @@ def detect_bloodspots(hsv_img):
                 segmentedImg.itemset((y, x), 0)
             else:
                 segmentedImg.itemset((y, x), 255)
-
-
-# Histogram check
-def images_for_rapport(images):
-    equalized_images = []
-    image = 0
-    for n in images:
-        # Equalized images
-        gray = cv2.cvtColor(n, cv2.COLOR_BGR2GRAY)
-        equalize = cv2.equalizeHist(gray)
-        equalized_images.append(equalize)
-
-        # Plotting
-        fig, axs = plt.subplots(2)
-        fig.suptitle('Vertically stacked subplots')
-        axs[0].hist(n.ravel(), 256, [0, 256])
-        axs[1].hist(equalize.ravel(), 256, [0, 256])
-        cv2.imshow(f"Image Equalized: {image}", equalize)
-        cv2.imshow(f"Image Not Equalized: {image}", gray)
-        plt.show()
-
-        image += 1
-        cv2.destroyAllWindows()
-
-    return 0

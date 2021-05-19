@@ -4,6 +4,54 @@ import warnings
 import glob
 import copy
 
+#from functions import claheHSL
+
+
+def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=False):
+    '''
+    Undistorts images using parameters found in MATLAB calibration using 'standard'.
+
+    :param inputImgs: The distorted images
+    :return: The undistorted image
+    '''
+
+    print("Started camera calibration...")
+
+    undistortedImgs = []
+
+    for img in inputImgs:
+        h, w, ch = img.shape
+
+        undistorted = np.zeros(img.shape, np.uint8)
+
+        for y in np.arange(-1, 1, 1 / h):
+            for x in np.arange(-1, 1, 1 / w):
+                xorig = x
+                yorig = y
+
+                r = np.sqrt(xorig ** 2 + yorig ** 2)
+                output_pos_x = round(Fx * (xorig * (1 + k_1 * r ** 2 + k_2 * r ** 4)) + imgCenterX);
+                output_pos_y = round(Fy * (yorig * (1 + k_1 * r ** 2 + k_2 * r ** 4)) + imgCenterY);
+
+                input_pos_x = round(Fx * x + imgCenterX)
+                input_pos_y = round(Fy * y + imgCenterY)
+
+                if input_pos_x < w - 1 and input_pos_y < h - 1 and output_pos_x < w - 1 and output_pos_y < h - 1:
+                    if input_pos_x >= 0 and input_pos_y >= 0 and output_pos_x >= 0 and output_pos_y >= 0:
+                        undistorted.itemset((input_pos_y, input_pos_x, 0), img.item((output_pos_y, output_pos_x, 0)))
+                        undistorted.itemset((input_pos_y, input_pos_x, 1), img.item((output_pos_y, output_pos_x, 1)))
+                        undistorted.itemset((input_pos_y, input_pos_x, 2), img.item((output_pos_y, output_pos_x, 2)))
+
+        undistortedImgs.append(undistorted)
+
+        if show_img:
+            cv2.imshow("Undistorted img", undistorted)
+            cv2.waitKey(1)
+
+    print("Done with calibration!")
+
+    return undistortedImgs
+
 
 def crop(images, y, x, height, width):
 
@@ -147,45 +195,6 @@ def find_contours():
     print("Find contours")
 
 
-def findInRange(images):
-    '''
-    Finds pixels in a pre-determined lower and upper bound.
-
-    :param images: And array with images to create masks off of
-    :return: A list with masks created from the images
-    '''
-    print("Creating masks...")
-
-    img_iso = []
-    for img in images:
-        # Make this function ourself
-        img_hsv = convert_RGB_to_HSV(img)
-
-        height, width = img.shape[0], img.shape[1]
-        img_copy = np.zeros((height, width), dtype=np.uint8)
-
-        # Define upper and lower
-        lower = np.array([0, 16, 16])
-        upper = np.array([94, 255, 255])
-
-        # Find the pixels within the value of the lower and upper bounds using numpy
-        img_hsv_iso = np.where(((img_hsv[:, :, 0] >= lower[0]) & (img_hsv[:, :, 0] <= upper[0])) &
-                               ((img_hsv[:, :, 1] >= lower[1]) & (img_hsv[:, :, 1] <= upper[1])) &
-                               ((img_hsv[:, :, 2] >= lower[2]) & (img_hsv[:, :, 2] <= upper[2])))
-
-        # Replace the pixels where we have those values found with white pixels
-        img_copy[img_hsv_iso] = 255
-
-        # Turn every other pixel which is not white to black
-        img_copy[img_copy != 255] = 0
-
-        img_iso.append(img_copy)
-
-    print("Done creating masks!")
-
-    return img_iso
-
-
 def grayScaling(img):
     """
     Function that will convert a BGR image to a mean valued greyscale image.
@@ -252,111 +261,12 @@ def convert_RGB_to_HSV(img):
     return hsv_img
 
 
-def undistortImg(distortedImg, recalibrate=False):
-    '''
-    Undistorts images using openCV's cv2.fisheye.calibrate function.
-    :param distortedImg: The distorted image that is to be undistorted.
-    :param recalibrate: set to True if recalibration is needed.
-    :return: The undistorted image.
-    '''
-
-    if recalibrate == True:
-        print('Calibrating camera please wait ... \n')
-        CHECKERBOARD = (6,9) # size of checkerboard
-
-        subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
-        calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
-        objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
-        objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
-
-        _img_shape = None
-        objpoints = [] # 3d point in real world space
-        imgpoints = [] # 2d points in image plane.
-
-        images = glob.glob('calibration/checkerboard_pics/*.JPG') #loaded images from folder in work tree
-        #Run through list of images of checkerboards
-        for fname in images:
-            img = cv2.imread(fname)
-            if _img_shape == None:
-                _img_shape = img.shape[:2]
-            else:
-                assert _img_shape == img.shape[:2] #All images must share the same size
-            gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-            # Find the chess board corners
-            ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
-            # If found, add object points, image points (after refining them)
-            if ret == True:
-                objpoints.append(objp)
-                cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),subpix_criteria)
-                imgpoints.append(corners)
-        N_OK = len(objpoints)
-        K = np.zeros((3, 3))
-        D = np.zeros((4, 1))
-        rvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
-        tvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
-
-        # Use the fisheye model to calibrate
-        rms, _, _, _, _ = \
-            cv2.fisheye.calibrate(
-                objpoints,
-                imgpoints,
-                gray.shape[::-1],
-                K,
-                D,
-                rvecs,
-                tvecs,
-                calibration_flags,
-                (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
-            )
-
-        # Save calibration session parametres
-        N_OK_array = np.array(N_OK)
-        _img_shape_array = np.array(_img_shape)
-        np.save('calibration/intrinsic_parameters/matrixK.npy', K)
-        np.save('calibration/intrinsic_parameters/matrixD.npy', D)
-        np.save('calibration/N_OK.npy', _img_shape_array)
-        np.save('calibration/_img_shape.npy', _img_shape)
-        print("Found " + str(N_OK_array) + " valid images for calibration")
-        print("DIM = Dimension of images = " + str(_img_shape_array[::-1]))
-
-    K = np.load('calibration/intrinsic_parameters/matrixK.npy')
-    D = np.load('calibration/intrinsic_parameters/matrixD.npy')
-    N_OK_array = np.load('calibration/N_OK.npy')
-    _img_shape_array = np.load('calibration/_img_shape.npy')
-
-    print("\nIntrinsic parameters")
-    print("Camera matrix: K =")
-    print(K)
-    print("D =")
-    print(D)
-
-    img_dim = distortedImg.shape[:2][::-1]
-
-    DIM = img_dim
-    balance = 1
-
-    scaled_K = K * img_dim[0] / DIM[0]
-    scaled_K[2][2] = 1.0
-
-    new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D,
-        img_dim, np.eye(3), balance=balance)
-
-    print('\n Undistorting image ... ')
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3),
-        new_K, img_dim, cv2.CV_16SC2)
-    undist_image = cv2.remap(distortedImg, map1, map2, interpolation=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT)
-
-    print('\n Image has been undistorted')
-
-    return undist_image
-
-
 def grassFire(mask):
     """ Only input binary images of 0 and 255 """
     mask_copy = copy.copy(mask)
 
     h, w = mask_copy.shape[:2]
+
     h = h-1
     w = w-1
 
@@ -398,7 +308,64 @@ def grassFire(mask):
 
                 else:
                     blob_array.append(temp_cord)
+                    print(temp_cord)
                     temp_cord = []
                     break
 
     return blob_array
+
+
+def segment_cod(images, show_images=False):
+
+    print("Started segmenting the cods!")
+
+    inRangeImages = []
+    segmentedImages = []
+
+    for img in images:
+        hsv_img = copy.copy(img)
+        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
+
+        lowerH = (99, 117)
+
+        h, w, ch = hsv_img.shape[:3]
+
+        mask = np.zeros((h, w), np.uint8)
+        # We start segmenting
+        for y in range(h):
+            for x in range(w):
+                H = hsv_img.item(y, x, 0)
+                S = hsv_img.item(y, x, 1)
+                V = hsv_img.item(y, x, 2)
+                # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
+                if lowerH[1] > H > lowerH[0]:
+                    mask.itemset((y, x), 0)
+                else:
+                    mask.itemset((y, x), 255)
+
+        # Create kernels for morphology
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((7, 7), np.uint8)
+
+        # Perform morphology
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
+
+        # NEEDS TO BE CHANGED TO OUR OWN BITWISE
+        segmented_cod = cv2.bitwise_and(img, img, mask=close2)
+
+        if show_images:
+            cv2.imshow("res", segmented_cod)
+            cv2.imshow("mask", mask)
+
+            key = cv2.waitKey(1)
+            if key == 27:
+                break
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmented_cod)
+
+    print("Finished segmenting the cods!")
+
+    return inRangeImages, segmentedImages

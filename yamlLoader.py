@@ -33,6 +33,7 @@ def setup_parameters(data_yaml):
     checkerboard_dimensions = []
     paths = []
     clahe = []
+    cali_parameters = []
 
     # Get the different parameters
     kernels_data = data_yaml.get('kernels')
@@ -59,6 +60,13 @@ def setup_parameters(data_yaml):
         clahe.append(clahe_c)
     print(clahe)
 
+    cali_data = data_yaml.get('calibration_parameters')
+    print(cali_data)
+    for tuple1, tuple2 in cali_data.items():
+        cali_c = [tuple1, tuple2]
+        cali_parameters.append(cali_c)
+    print(cali_parameters)
+
     print("Done setting up the parameters!")
 
-    return kernels, checkerboard_dimensions, paths, clahe
+    return kernels, checkerboard_dimensions, paths, clahe, cali_parameters
