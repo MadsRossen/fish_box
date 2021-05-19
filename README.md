@@ -1,8 +1,24 @@
 # Fish box
 
-## Introduction
-- How to use Git (version control system (VCS)) with Andreas Møgelmose [Chapter 1](https://bbcdn.githack.com/andreasmoegelmose/learninggit/raw/v1.06/LearningGit-Chapter1.html)
-- How to uplode and use it with GitHub etc. with Andreas Møgelmose [Chapter 2](https://bbcdn.githack.com/andreasmoegelmose/learninggit/raw/v1.06/LearningGit-Chapter2.html) [Chapter 3](https://bbcdn.githack.com/andreasmoegelmose/learninggit/raw/v1.06/LearningGit-Chapter3.html)
-- How to edit the README.md file -> [in PyCharm](https://www.jetbrains.com/help/pycharm/markdown.html)
+## Code overview
 
-## Dependencies
+1. [Grass fire algorithm](link)
+2. [Harris corner detection](link)
+3. [Thresholding](link)
+4. [Find center of contur mass](link)
+5. [Camera calibration](link)
+6. [Blur](link)
+***
+### Morphology
+7. [Erosion](link) 
+8. [Dialation](link)
+9. [Opening](link)
+10. [Closing](link)
+11. [Sobel operator](link)
+***
+### Color converting
+12. [Gray scaling](link)
+13. [RGB to HSV](link)
+
+# Reference
+GitHub: [How to edit markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
