@@ -4,18 +4,19 @@ import cv2
 import matplotlib.pyplot as plt
 
 import calibration
-from functions_openCV import crop, claheHSL, harrisCorner, normHistEqualizeHLS
-from calibration import undistortImg
-from mathias_functions import smallrange_isolate_img_content, detect_bloodspots
+import extremeImageProcessing as eip
 import functions_analyse as ft
 import yamlLoader as yamlL
-import extremeImageProcessing as eip
+from calibration import undistortImg
+from functions_openCV import crop, claheHSL, harrisCorner
+from mathias_functions import smallrange_isolate_img_content, detect_bloodspots
 
 # User options
 save_steps     = True
 recalibrate    = False
 openCV         = True
 
+# Run program using openCV functions
 if openCV:
      start_time = time.time()
 
@@ -39,7 +40,8 @@ if openCV:
      cropped_images = eip.crop(images, 700, 450, 600, 2200)
 
      # Threshold to create a mask for each image
-     # masks = eip.findInRange(fish_cali) - Might need to get removed
+     img_HSV = cv2.cvtColor(img_CLAHE, cv2.COLOR_BGR2HSV)
+     mask_cod, img_segmented_cod = smallrange_isolate_img_content(img_CLAHE, img_HSV)
 
      # Threshold to create a mask for each image
      masks, segmented_images = ft.segment_cod(cropped_images, clahe[0][1], clahe[1][1], False)
@@ -224,5 +226,7 @@ if openCV:
      cv2.waitKey(0)
      cv2.destroyAllWindows()
      '''
+
+# Run program using own built functions
 if openCV == False:
      openCV = True
