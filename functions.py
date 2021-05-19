@@ -79,6 +79,7 @@ def save_img(img):
         cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
 
 
+
 def replaceHighlights(main_img, spec_img, limit):
     """
     This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
