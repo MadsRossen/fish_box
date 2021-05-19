@@ -3,8 +3,60 @@
 'https://medium.com/@kennethjiang/calibrate-fisheye-lens-using-opencv-333b05afa0b0'
 
 import glob
+import warnings
+
 import cv2
 import numpy as np
+
+import extremeImageProcessing as eip
+
+import cv2 as cv
+import numpy as np
+from matplotlib import pyplot as plt
+import time
+
+def undistort(inputImg):
+    '''
+    Undistorts images using parameters found in MATLAB calibration using 'standard'
+
+    :param inputImg:
+    :return:
+    '''
+    start_time = time.time()
+    h, w, ch = inputImg.shape
+
+    # Parameters found in MATLAB calibration session
+    k_1 = -0.2666
+    k_2 = 0.0845
+    imgCenterX = 1441.64880195002
+    imgCenterY = 1126.65141577051
+    Fx = 1757.26695467940
+    Fy = 1743.87124082603
+
+    undistorted = np.zeros(inputImg.shape, np.uint8)
+
+    for y in np.arange(-1, 1, 1 / h):
+        for x in np.arange(-1, 1, 1 / w):
+            xorig = x
+            yorig = y
+
+            r = np.sqrt(xorig ** 2 + yorig ** 2)
+            output_pos_x = round(Fx * (xorig * (1 + k_1 * r ** 2 + k_2 * r ** 4)) + imgCenterX);
+            output_pos_y = round(Fy * (yorig * (1 + k_1 * r ** 2 + k_2 * r ** 4)) + imgCenterY);
+
+            input_pos_x = round(Fx * x + imgCenterX)
+            input_pos_y = round(Fy * y + imgCenterY)
+
+            if input_pos_x < w - 1 and input_pos_y < h - 1 and output_pos_x < w - 1 and output_pos_y < h - 1:
+                if input_pos_x >= 0 and input_pos_y >= 0 and output_pos_x >= 0 and output_pos_y >= 0:
+                    undistorted.itemset((input_pos_y, input_pos_x, 0), inputImg.item((output_pos_y, output_pos_x, 0)))
+                    undistorted.itemset((input_pos_y, input_pos_x, 1), inputImg.item((output_pos_y, output_pos_x, 1)))
+                    undistorted.itemset((input_pos_y, input_pos_x, 2), inputImg.item((output_pos_y, output_pos_x, 2)))
+    print("Execution time for optimized item/itemset function: ", "--- %s seconds ---" % (time.time() - start_time))
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.imshow(inputImg)
+    ax2.imshow(undistorted)
+    plt.show()
 
 def undistortImg(distortedImg, recalibrate=False):
     '''
@@ -67,15 +119,15 @@ def undistortImg(distortedImg, recalibrate=False):
         # Save calibration session parametres
         N_OK_array = np.array(N_OK)
         _img_shape_array = np.array(_img_shape)
-        np.save('calibration/intrinsic_parameters/matrixK.npy', K)
-        np.save('calibration/intrinsic_parameters/matrixD.npy', D)
+        np.save('calibration/parameters_calibration_session/matrixK.npy', K)
+        np.save('calibration/parameters_calibration_session/matrixD.npy', D)
         np.save('calibration/N_OK.npy', _img_shape_array)
         np.save('calibration/_img_shape.npy', _img_shape)
         print("Found " + str(N_OK_array) + " valid images for calibration")
         print("DIM = Dimension of images = " + str(_img_shape_array[::-1]))
 
-    K = np.load('calibration/intrinsic_parameters/matrixK.npy')
-    D = np.load('calibration/intrinsic_parameters/matrixD.npy')
+    K = np.load('calibration/parameters_calibration_session/matrixK.npy')
+    D = np.load('calibration/parameters_calibration_session/matrixD.npy')
     N_OK_array = np.load('calibration/N_OK.npy')
     _img_shape_array = np.load('calibration/_img_shape.npy')
 
@@ -105,3 +157,117 @@ def undistortImg(distortedImg, recalibrate=False):
     print('\n Image has been undistorted')
 
     return undist_image
+
+
+def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show_img=False, recalibrate=False):
+    """
+    Undistorts images by a checkerboard calibration.
+
+    :param show_img: Debug to see if all the images are loaded and all the edges are found
+    :param dimensions: The dimensions of the checkerboard from a YAML file
+    :param images_distort: The images the needs to be undistorted
+    :param images_checkerboard: The images of the checkerboard to calibrate by
+    :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
+    :param recalibrate: Set to 'True' for recalibration. NOTE: new checkerboard images mst be put into the path: calibration/checkerboard_pics
+    :return:
+    """
+
+    if recalibrate:
+        print("Started calibrating...")
+
+        # termination criteria
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
+
+        # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+        objp = np.zeros((dimensions[0][1] * dimensions[1][1], 3), np.float32)
+        objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
+
+        # Arrays to store object points and image points from all the images.
+        objpoints = []  # 3d point in real world space
+        imgpoints = []  # 2d points in image plane.
+        for img in images_checkerboard:
+            gray = eip.grayScaling(img)
+
+            # Find the chess board corners
+            ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
+
+            # If found, add object points, image points (after refining them)
+            if ret is True:
+                objpoints.append(objp)
+                corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                imgpoints.append(corners)
+                # Draw and display the corners
+                cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
+                if show_img:
+                    print(imgpoints)
+                    cv2.imshow('img', img)
+                    cv2.imshow('gray', gray)
+                    cv2.waitKey(0)
+            else:
+                warnings.warn("No ret! This might lead to a crash.")
+
+        # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
+        try:
+            print("Found " + str(images_checkerboard) + " valid images for calibration")
+            print("DIM = Dimension of images = " + str(images_checkerboard[::-1]))
+
+            # Calibrate the camera
+            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
+
+            # Save calibration session parametres
+            np.save('calibration/parameters_calibration_session/ret.npy', ret)
+            np.save('calibration/parameters_calibration_session/mtx.npy', mtx)
+            np.save('calibration/parameters_calibration_session/dist.npy', dist)
+            np.save('calibration/parameters_calibration_session/rvecs.npy', rvecs)
+            np.save('calibration/parameters_calibration_session/tvecs.npy', tvecs)
+
+            print("New calibration parameters saved")
+
+        except ValueError:
+            # If the calibration fails, inform us and tell us the error
+            warnings.warn(f"Could not calibrate camera. Check images. Error {ValueError}")
+            mean_error = 0
+            tot_error = 0
+
+            # Show the total error
+            for i in range(len(objpoints)):
+                imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+                error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+                tot_error += error
+
+            print("total error: ", mean_error / len(objpoints))
+
+            # If the function fails, return the input arguments
+            return images_distort
+
+    print("Undistorting images")
+
+    # Load in parameters from previous calibration session
+    ret = np.load('calibration/parameters_calibration_session/ret.npy')
+    mtx = np.load('calibration/parameters_calibration_session/mtx.npy')
+    dist = np.load('calibration/parameters_calibration_session/dist.npy')
+    rvecs = np.load('calibration/parameters_calibration_session/rvecs.npy')
+    tvecs = np.load('calibration/parameters_calibration_session/tvecs.npy')
+
+    # Go through all the images and undistort them
+    img_undst = []
+    for n in images_distort:
+        # Get image shape
+        h, w = n.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+
+        # undistorted
+        mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
+        dst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
+
+        # crop the image back to original shape
+        x, y, w, h = roi
+        dst = dst[y:y + h, x:x + w]
+        img_undst.append(dst)
+        if show_img:
+            cv2.imshow('calibresult.png', dst)
+            cv2.waitKey(0)
+
+    print("Done calibrating")
+
+    return img_undst

@@ -19,7 +19,7 @@ def yaml_loader(filepath):
     return yaml_data
 
 
-def setup_parameters(data_yaml):
+def setup_parameters(data_yaml, printparameters=False):
     """
     Setups the parameters for the software.
 
@@ -39,25 +39,27 @@ def setup_parameters(data_yaml):
     for open_kernel, closed_kernel in kernels_data.items():
         kernels_c = [open_kernel, closed_kernel]
         kernels.append(kernels_c)
-    print(kernels)
 
     checkerboard_dimensions_data = data_yaml.get('checkerboard_dimensions')
     for x, y in checkerboard_dimensions_data.items():
         checkerboard_dimensions_c = [x, y]
         checkerboard_dimensions.append(checkerboard_dimensions_c)
-    print(checkerboard_dimensions)
 
     paths_data = data_yaml.get('paths')
     for fish, checkerboard_calibration in paths_data.items():
         paths_c = [fish, checkerboard_calibration]
         paths.append(paths_c)
-    print(paths)
 
     clahe_data = data_yaml.get('clahe')
     for clipLimit, tileGridSize in clahe_data.items():
         clahe_c = [clipLimit, tileGridSize]
         clahe.append(clahe_c)
-    print(clahe)
+
+    if printparameters:
+        print(kernels)
+        print(clahe)
+        print(paths)
+        print(checkerboard_dimensions)
 
     print("Done setting up the parameters!")
 

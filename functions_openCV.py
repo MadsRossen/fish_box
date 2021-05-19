@@ -382,8 +382,8 @@ def meanEdgeRGB(img):
     print('mean green back: ', meanGreenBack)
     print('mean red back: ', meanRedBack)
 
-# SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
 def SURFalignment(img1, img2):
+    # SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
     img1Gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
     img2Gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)

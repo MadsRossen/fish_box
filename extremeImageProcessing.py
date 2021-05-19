@@ -313,15 +313,15 @@ def undistortImg(distortedImg, recalibrate=False):
         # Save calibration session parametres
         N_OK_array = np.array(N_OK)
         _img_shape_array = np.array(_img_shape)
-        np.save('calibration/intrinsic_parameters/matrixK.npy', K)
-        np.save('calibration/intrinsic_parameters/matrixD.npy', D)
+        np.save('calibration/parameters_calibration_session/matrixK.npy', K)
+        np.save('calibration/parameters_calibration_session/matrixD.npy', D)
         np.save('calibration/N_OK.npy', _img_shape_array)
         np.save('calibration/_img_shape.npy', _img_shape)
         print("Found " + str(N_OK_array) + " valid images for calibration")
         print("DIM = Dimension of images = " + str(_img_shape_array[::-1]))
 
-    K = np.load('calibration/intrinsic_parameters/matrixK.npy')
-    D = np.load('calibration/intrinsic_parameters/matrixD.npy')
+    K = np.load('calibration/parameters_calibration_session/matrixK.npy')
+    D = np.load('calibration/parameters_calibration_session/matrixD.npy')
     N_OK_array = np.load('calibration/N_OK.npy')
     _img_shape_array = np.load('calibration/_img_shape.npy')
 

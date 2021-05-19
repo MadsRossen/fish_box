@@ -21,12 +21,6 @@ def detect_bloodspots(img, hsv_img):
     boolean_bloodspot = False
     marked_bloodspots = copy.copy(img)
 
-    # HSV values found by empirical tests:
-    bloodspotHue_start = (0, 12)
-    bloodspotHue_end = (170, 180)
-    bloodspot_Saturation = (120, 255)
-    bloodspot_Value = (200, 255)
-
     h, w, ch = hsv_img.shape
 
     mask = np.zeros((h, w), np.uint8)
@@ -46,7 +40,7 @@ def detect_bloodspots(img, hsv_img):
         if area > 100:
             x, y, w, h = cv2.boundingRect(cont)
             # Create tag
-            cv2.putText(marked_bloodspots, 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
+            cv2.putText(marked_bloodspots, 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 3, (0, 0, 255), 2)
             # Draw green contour
             cv2.drawContours(marked_bloodspots, [cont], -1, (0,255,0), 2)
             boolean_bloodspot = True
@@ -55,9 +49,7 @@ def detect_bloodspots(img, hsv_img):
 
 def smallrange_isolate_img_content(img, hsv_img):
 
-    lowerH = (101, 113)
-
-    lowerv = (0, 0)
+    lowerH = (99, 117)
 
     h, w, ch = hsv_img.shape[:3]
 
@@ -71,21 +63,18 @@ def smallrange_isolate_img_content(img, hsv_img):
             # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
             if lowerH[1] > H > lowerH[0]:
                 mask.itemset((y, x), 0)
-            # If Hue lies in the lowerValRange(black value range) we want to segment it out
-            #elif lowerv[1] > V > lowerv[0]:
-            #    mask.itemset((y, x), 0)
             else:
                 mask.itemset((y, x), 255)
 
-    kernel1 = np.ones((3, 5), np.uint8)
-    kernel2 = np.ones((7, 7), np.uint8)
+    kernelOpen = np.ones((3, 3), np.uint8)
+    kernelClose = np.ones((7, 7), np.uint8)
 
-    open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel1)
-    close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernel2)
+    open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
+    close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
 
     segmented_cod = cv2.bitwise_and(img, img, mask=close2)
 
-    return mask, segmented_cod
+    return close2, segmented_cod
 
 def smallrange_isolate_img(hsv_img):
 

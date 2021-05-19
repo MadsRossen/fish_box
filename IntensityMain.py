@@ -12,7 +12,7 @@ import Funcs as F
 TestControl = glob.glob("GOPR1706.JPG")
 Testdiffuse = glob.glob("GOPR1716.JPG")
 Testpapirdome = glob.glob("GOPR1656.jpg")
-fisk = cv2.imread("fish_pics/step1_haandholdt_closeup_GOPR1886.JPG")
+fisk = cv2.imread("fish_pics/input_images/step1_nytest_GOPR1956.JPG")
 
 # Compute intensity histogram and mean value:
 controlMeanHisto, controlMeanVal = F.calcMeanHist(TestControl)
@@ -163,11 +163,12 @@ cv.createTrackbar(low_V_name, window_detection_name, low_V, max_value, on_low_V_
 cv.createTrackbar(high_V_name, window_detection_name, high_V, max_value, on_high_V_thresh_trackbar)
 while True:
 
-    frame = cv2.imread('fish_pics/step6.JPG', 1)
+    frame = cv2.imread('fish_pics/step3.JPG', 1)
     if frame is None:
         break
     frame_HSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+    frame_threshold = cv.inRange(frame_HSV, (99, 30, 70), (180, 255, 255))
 
     cv.imshow(window_capture_name, frame)
     segmented_blodspots = cv2.bitwise_and(frame, frame, mask=frame_threshold)

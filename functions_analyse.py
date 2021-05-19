@@ -4,7 +4,6 @@ import os
 import math
 import warnings
 import extremeImageProcessing as eip
-import sys
 
 from matplotlib import pyplot as plt
 # A library that has a equalize matcher!
@@ -369,95 +368,6 @@ def rotateImages(rotate_img, xcm, ycm, contours):
     print("Done raytracing!")
     plt.show()
     return rotate_img
-
-
-def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show_img=False):
-    """
-    Undistorts images by a checkerboard calibration.
-
-    :param show_img: Debug to see if all the images are loaded and all the edges are found
-    :param dimensions: The dimensions of the checkerboard from a YAML file
-    :param images_distort: The images the needs to be undistorted
-    :param images_checkerboard: The images of the checkerboard to calibrate by
-    :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
-    """
-
-    print("Started calibrating...")
-
-    # termination criteria
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
-
-    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    objp = np.zeros((dimensions[0][1] * dimensions[1][1], 3), np.float32)
-    objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
-
-    # Arrays to store object points and image points from all the images.
-    objpoints = []  # 3d point in real world space
-    imgpoints = []  # 2d points in image plane.
-    for img in images_checkerboard:
-        gray = eip.grayScaling(img)
-
-        # Find the chess board corners
-        ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
-
-        # If found, add object points, image points (after refining them)
-        if ret is True:
-            objpoints.append(objp)
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            imgpoints.append(corners)
-            # Draw and display the corners
-            cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
-            if show_img:
-                print(imgpoints)
-                cv2.imshow('img', img)
-                cv2.imshow('gray', gray)
-                cv2.waitKey(0)
-        else:
-            warnings.warn("No ret! This might lead to a crash.")
-    # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
-    try:
-        # Calibrate the camera
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
-
-        # Go through all the images and undistort them
-        img_undst = []
-        for n in images_distort:
-            # Get image shape
-            h, w = n.shape[:2]
-            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-
-            # undistorted
-            mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
-            dst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
-
-            # crop the image back to original shape
-            x, y, w, h = roi
-            dst = dst[y:y + h, x:x + w]
-            img_undst.append(dst)
-            if show_img:
-                cv2.imshow('calibresult.png', dst)
-                cv2.waitKey(0)
-
-        print("Done calibrating")
-
-        return img_undst
-
-    except ValueError:
-        # If the calibration fails, inform us and tell us the error
-        warnings.warn(f"Could not calibrate camera. Check images. Error {ValueError}")
-        mean_error = 0
-        tot_error = 0
-
-        # Show the total error
-        for i in range(len(objpoints)):
-            imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-            error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-            tot_error += error
-
-        print("total error: ", mean_error / len(objpoints))
-
-        # If the function fails, return the input arguments
-        return images_distort
 
 
 def isolate_img(resized_input_image):
