@@ -6,11 +6,9 @@ import calibration
 import extremeImageProcessing as eip
 import functions_analyse as ft
 import yamlLoader as yamlL
-from mathias_functions import segment_codOPENCV, detect_bloodspotsOPENCV
+from mathias_functions import segment_codOPENCV, detect_bloodspotsOPENCV, save_imgOPENCV
 
 # User options
-save_steps     = True
-recalibrate    = False
 openCV         = True
 
 # Run program using openCV functions
@@ -21,37 +19,42 @@ if openCV:
      yaml_data = yamlL.yaml_loader("parameters.yaml")
 
      # Load in the yaml parameters from the data
-     kernels, checkerboard_dimensions, paths, clahe = yamlL.setup_parameters(yaml_data, printparameters=False)
+     kernels, checkerboard_dimensions, paths, clahe = yamlL.setup_parameters(yaml_data, printParameters=False)
 
      # Load Fish images
-     images, names = ft.loadImages(paths[0][1], False, False, 40)
+     images, names, img_list_fish = ft.loadImages(paths[0][1], False, False, 40)
 
      # Load checkerboard images
-     img_cali, names_cali = ft.loadImages(paths[1][1], False, False, 40)
+     img_cali, names_cali, _ = ft.loadImages(paths[1][1], False, False, 40)
 
      # Calibrate camera and undistort images
      fish_cali = calibration.checkerboard_calibrateOPENCV(checkerboard_dimensions, images, img_cali,
                                                           show_img=False, recalibrate=False)
      # Crop to ROI
-     cropped_images = eip.crop(fish_cali, 700, 450, 600, 2200)
+     cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
 
      # Threshold to create a mask for each image
      mask_cod, img_segmented_cod = segment_codOPENCV(cropped_images)
+     cv2.imwrite('fish_pics/segment_this.JPG', img_segmented_cod[5])
 
      # Bloodspot detection
      mask_bloodspots, bloodspots, marked_bloodspots, boolean_bloodspot = detect_bloodspotsOPENCV(img_segmented_cod)
 
+     # Save marked bloodspots images in folder
+     save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images', img_list_fish)
+
      # Create subplots of steps
      # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
-     img_rgb = cv2.cvtColor(images[0], cv2.COLOR_BGR2RGB)
-     img_undistorted_rgb = cv2.cvtColor(fish_cali[0], cv2.COLOR_BGR2RGB)
-     img_cropped_rgb = cv2.cvtColor(cropped_images[0], cv2.COLOR_BGR2RGB)
-     img_segmented_codrgb = cv2.cvtColor(img_segmented_cod[0], cv2.COLOR_BGR2RGB)
-     bloodspotsrgb = cv2.cvtColor(bloodspots[0], cv2.COLOR_BGR2RGB)
-     marked_bloodspotssrgb = cv2.cvtColor(marked_bloodspots[0], cv2.COLOR_BGR2RGB)
+     fish_nr = 2
+     img_rgb = cv2.cvtColor(images[fish_nr], cv2.COLOR_BGR2RGB)
+     img_undistorted_rgb = cv2.cvtColor(fish_cali[fish_nr], cv2.COLOR_BGR2RGB)
+     img_cropped_rgb = cv2.cvtColor(cropped_images[fish_nr], cv2.COLOR_BGR2RGB)
+     img_segmented_codrgb = cv2.cvtColor(img_segmented_cod[fish_nr], cv2.COLOR_BGR2RGB)
+     bloodspotsrgb = cv2.cvtColor(bloodspots[fish_nr], cv2.COLOR_BGR2RGB)
+     marked_bloodspotssrgb = cv2.cvtColor(marked_bloodspots[fish_nr], cv2.COLOR_BGR2RGB)
 
      fig = plt.figure()
-     fig.suptitle('Step in algorithm', fontsize=16)
+     fig.suptitle('Steps in algorithm', fontsize=16)
 
      plt.subplot(3, 3, 1)
      plt.imshow(img_rgb)
@@ -65,20 +68,25 @@ if openCV:
      plt.imshow(img_cropped_rgb)
      plt.title('ROI')
 
-     plt.subplot(3, 3, 5)
+     plt.subplot(3, 3, 4)
      plt.imshow(img_segmented_codrgb)
      plt.title('Segmented cod')
 
-     plt.subplot(3, 3, 6)
+     plt.subplot(3, 3, 5)
      plt.imshow(bloodspotsrgb)
      plt.title('Blood spots segmented')
 
-     plt.subplot(3, 3, 7)
+     plt.subplot(3, 3, 6)
      plt.imshow(marked_bloodspotssrgb)
      plt.title('Blood spots tagged')
 
-     plt.show
+     plt.show()
 
+# Run program using own built functions
+     if openCV == False:
+          openCV = True
+
+'''
      # Get the contours
      contour = ft.find_contours(masks, cropped_images)
 
@@ -98,11 +106,6 @@ if openCV:
      cv2.waitKey(0)
      cv2.destroyAllWindows()
 
-# Run program using own built functions
-if openCV == False:
-     openCV = True
-
-'''
 if openCV == False:
      checkeboardImg = cv2.imread('calibration/checkerboard_pics/GOPR1840.JPG',0)
      cornercoordinateImg = harrisCorner(checkeboardImg)

@@ -18,8 +18,8 @@ fisk = cv2.imread("fish_pics/input_images/step1_nytest_GOPR1956.JPG")
 controlMeanHisto, controlMeanVal = F.calcMeanHist(TestControl)
 diffuseMeanHisto, diffuseMeanVal = F.calcMeanHist(Testdiffuse)
 papirdomeMeanHisto, papirdomeMeanVal = F.calcMeanHist(Testpapirdome)
-HSV_H_Histo = F.calcHueChanHist(fisk[:,:,0])
-RGB_B_Histo = F.calcHueChanHist(fisk[:,:,2])
+#HSV_H_Histo = F.calcHueChanHist(fisk[:,:,0])
+#RGB_B_Histo = F.calcHueChanHist(fisk[:,:,2])
 
 Test1_Text = "Dome light (Halogen)"
 Test6_Text = "Control (Halogen)"
@@ -29,6 +29,7 @@ Test8_Text = ""
 #Test6_Text = "White dome + shielding background"
 #Test7_Text = "Gray background"
 
+'''
 # Uanset hvor mange plot jeg laver,
 # så er det første plot altid en combination af dem, ved ikke hvorfor det sker :/
 plt.plot(controlMeanHisto, 'r', label = Test6_Text)
@@ -67,7 +68,7 @@ plt.subplots_adjust(left=0.083, right=0.995, top=0.994, bottom=0.092)
 plt.show()
 
 # Show histograms
-plt.plot(HSV_H_Histo, 'black')
+#plt.plot(HSV_H_Histo, 'black')
 plt.xlim([0, 255])
 plt.legend()
 plt.xlabel('Hue')
@@ -76,13 +77,14 @@ plt.subplots_adjust(left=0.083, right=0.995, top=0.994, bottom=0.092)
 plt.show()
 
 # Show histograms
-plt.plot(RGB_B_Histo, 'black')
+#plt.plot(RGB_B_Histo, 'black')
 plt.xlim([0, 255])
 plt.legend()
 plt.xlabel('Hue')
 plt.ylabel('Number of pixels in percentage')
 plt.subplots_adjust(left=0.083, right=0.995, top=0.994, bottom=0.092)
 plt.show()
+'''
 
 max_value = 255
 max_value_H = 360 // 2
@@ -163,15 +165,27 @@ cv.createTrackbar(low_V_name, window_detection_name, low_V, max_value, on_low_V_
 cv.createTrackbar(high_V_name, window_detection_name, high_V, max_value, on_high_V_thresh_trackbar)
 while True:
 
-    frame = cv2.imread('fish_pics/step3.JPG', 1)
+    frame = cv2.imread('fish_pics/segment_this.JPG', 1)
+
+    # percent by which the image is resized
+    scale_percent = 70
+
+    # calculate the 50 percent of original dimensions
+    width = int(frame.shape[1] * scale_percent / 100)
+    height = int(frame.shape[0] * scale_percent / 100)
+
+    # dsize
+    dsize = (width, height)
+
+    frame = cv2.resize(frame, dsize)
     if frame is None:
         break
     frame_HSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
-    frame_threshold = cv.inRange(frame_HSV, (99, 30, 70), (180, 255, 255))
+    # try 1 : frame_threshold = cv.inRange(frame_HSV, (99, 30, 70), (180, 255, 255))
 
     cv.imshow(window_capture_name, frame)
-    segmented_blodspots = cv2.bitwise_and(frame, frame, mask=frame_threshold)
+    segmented_blodspots = cv2.bitwise_or(frame, frame, mask=frame_threshold)
     cv.imshow(window_detection_name, segmented_blodspots)
 
     key = cv.waitKey(30)

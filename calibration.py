@@ -161,14 +161,21 @@ def undistortImg(distortedImg, recalibrate=False):
 def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard, show_img=False, recalibrate=False):
     """
     Undistorts images by a checkerboard calibration.
+
+    SRC: https://docs.opencv.org/master/dc/dbb/tutorial_py_calibration.html
+
     :param show_img: Debug to see if all the images are loaded and all the edges are found
     :param dimensions: The dimensions of the checkerboard from a YAML file
     :param images_distort: The images the needs to be undistorted
     :param images_checkerboard: The images of the checkerboard to calibrate by
     :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
     """
+    print('Undistorting images ... \n')
+
     if recalibrate:
         print('Calibrating camera please wait ... \n')
+
+        chessboardSize = (6, 9)
 
         # termination criteria
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
@@ -180,11 +187,12 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
         # Arrays to store object points and image points from all the images.
         objpoints = []  # 3d point in real world space
         imgpoints = []  # 2d points in image plane.
+
         for img in images_checkerboard:
-            gray = eip.grayScaling(img)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
             # Find the chess board corners
-            ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
+            ret, corners = cv2.findChessboardCorners(gray, chessboardSize, None)
 
             # If found, add object points, image points (after refining them)
             if ret is True:
@@ -192,63 +200,51 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
                 corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
                 imgpoints.append(corners)
                 # Draw and display the corners
-                cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
+                cv2.drawChessboardCorners(img, chessboardSize, corners2, ret)
                 if show_img:
                     print(imgpoints)
                     cv2.imshow('img', img)
                     cv2.imshow('gray', gray)
                     cv2.waitKey(0)
-            else:
-                warnings.warn("No ret! This might lead to a crash.")
-        # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
-        try:
-            # Calibrate the camera
-            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
 
-            # Save calibration session parametres
-            print('Saving calibration session parameters in calibration/parameters_calibration_session ... \n')
-            np.save('calibration/parameters_calibration_session/ret.npy', ret)
-            np.save('calibration/parameters_calibration_session/mtx.npy', mtx)
-            np.save('calibration/parameters_calibration_session/dist.npy', dist)
-            np.save('calibration/parameters_calibration_session/rvecs.npy', rvecs)
-            np.save('calibration/parameters_calibration_session/tvecs.npy', tvecs)
-
-        except ValueError:
-            # If the calibration fails, inform us and tell us the error
-            warnings.warn(f"Could not calibrate camera. Check images. Error {ValueError}")
-            mean_error = 0
-            tot_error = 0
-
-            return 0
-
-        # Parameters from previous calibration session
-        mtx = np.save('calibration/parameters_calibration_session/mtx.npy')
-        dist = np.save('calibration/parameters_calibration_session/dist.npy')
-
-        print("\n Intrinsic parameters")
-        print("Camera matrix: K =")
-        print(mtx)
-        print("Distortion coefficients =")
-        print(dist)
-
-        # Go through all the images and undistort them
-        img_undst = []
-        for n in images_distort:
-            # Get image shape
-            h, w = n.shape[:2]
-
-            # Refine the camera matrix
-            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-
-            # Undistort using remapping
-            mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
-            undst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
-
-            img_undst.append(undst)
-            if show_img:
-                cv2.imshow('calibresult.png', undst)
-                cv2.waitKey(0)
+        # Calibrate the camera
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
 
         print("Done calibrating")
 
-        return img_undst
+        # Save calibration session parameters
+        print('Saving calibration session parameters in calibration/parameters_calibration_session ... \n')
+        np.save('calibration/parameters_calibration_session/mtx.npy', mtx)
+        np.save('calibration/parameters_calibration_session/dist.npy', dist)
+
+    # Loading in parameters from previous calibration session
+    mtx = np.load('calibration/parameters_calibration_session/mtx.npy')
+    dist = np.load('calibration/parameters_calibration_session/dist.npy')
+
+    print("\n Intrinsic parameters")
+    print("Camera matrix: K =")
+    print(mtx)
+    print("\nDistortion coefficients =")
+    print(dist)
+
+    # Go through all the images and undistort them
+    img_undst = []
+    for n in images_distort:
+        # Get image shape
+        h, w = n.shape[:2]
+
+        # Refine the camera matrix
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+
+        # Undistort using remapping
+        mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
+        undst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
+
+        img_undst.append(undst)
+        if show_img:
+            cv2.imshow('calibresult.png', undst)
+            cv2.waitKey(0)
+
+    print("Done undistorting images")
+
+    return img_undst

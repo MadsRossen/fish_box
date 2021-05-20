@@ -19,7 +19,7 @@ def yaml_loader(filepath):
     return yaml_data
 
 
-def setup_parameters(data_yaml, printparameters=False):
+def setup_parameters(data_yaml, printParameters=False):
     """
     Setups the parameters for the software.
 
@@ -55,7 +55,7 @@ def setup_parameters(data_yaml, printparameters=False):
         clahe_c = [clipLimit, tileGridSize]
         clahe.append(clahe_c)
 
-    if printparameters:
+    if printParameters:
         print(kernels)
         print(clahe)
         print(paths)

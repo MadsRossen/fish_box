@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 # A library that has a equalize matcher!
 from skimage.exposure import match_histograms
 
-
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     """
     Loads all the images inside a file.
@@ -47,7 +46,7 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
     print("Done loading the images!")
 
-    return images, class_names
+    return images, class_names, img_list
 
 
 def save_img(img):
