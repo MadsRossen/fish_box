@@ -4,8 +4,6 @@ import warnings
 import glob
 import copy
 
-#from functions import claheHSL
-
 
 def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=False):
     '''

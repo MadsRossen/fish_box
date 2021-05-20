@@ -27,8 +27,8 @@ if run_own_functions == 'y':
     img_cali, names_cali = ft.loadImages(paths[1][1], False, False, 40)
 
     # Calibrate camera and undistort images
-    # fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
-                             # cali_pa[5][1], True)
+    fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
+                              cali_pa[5][1], True)
 
     # Crop to ROI
     cropped_images = eip.crop(images, 700, 450, 600, 2200)

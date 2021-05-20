@@ -18,6 +18,7 @@ paths:
   fish: "fishpics/NewFish"
   checkerboard_calibration: "fishpics/CheckerBoards"
   fish_histogram_test: "fishpics/Test11"
+  safe_cali_img: "fishpics/calibrated_images"
 
 clahe:
   clipLimit: 2
