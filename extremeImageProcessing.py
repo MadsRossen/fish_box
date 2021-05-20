@@ -7,11 +7,19 @@ from random import randint
 
 
 def crop(images, y, x, height, width):
+    '''
+    Crops images
+    :param images:
+    :return: Cropped images
+    '''
 
+    print("Cropping images ... ")
     cropped_images = []
     for n in images:
         ROI = n[y:y + height, x:x + width]
         cropped_images.append(ROI)
+
+    print("Done cropping images!")
 
     return cropped_images
 

@@ -438,10 +438,7 @@ def segment_cod(images, cahe_clipSize, titleSize, show_images=False):
 
     for n in images:
         while True:
-            clahe = claheHSL(n, cahe_clipSize, titleSize)
-            # Check if clahe works by converting it back to BGR and check if it looks the same as clahe
-            # is clahe BRG or RGB or something third?
-            hsv_img = cv2.cvtColor(clahe, cv2.COLOR_BGR2HSV)
+            hsv_img = cv2.cvtColor(n, cv2.COLOR_BGR2HSV)
 
             # lowerHseg = cv2.getTrackbarPos("lowerHseg", "res")
             # higherHseg = cv2.getTrackbarPos("higherHseg", "res")

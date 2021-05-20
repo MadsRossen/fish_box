@@ -16,65 +16,98 @@ def save_img(img):
     else:
         cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
 
-def detect_bloodspots(img, hsv_img):
+def detect_bloodspotsOPENCV(imgs):
 
-    boolean_bloodspot = False
-    marked_bloodspots = copy.copy(img)
+    mask_bloodspots = []
+    segmented_blodspots_imgs = []
+    marked_bloodspots_imgs = []
+    booleans_bloodspot = []         # List of boolean values for each image classification
+    count = 0
 
-    h, w, ch = hsv_img.shape
+    for n in imgs:
+        hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
 
-    mask = np.zeros((h, w), np.uint8)
+        booleans_bloodspot.append(False)
+        marked_bloodspots_imgs.append(copy.copy(n))
 
-    frame_threshold1 = cv2.inRange(hsv_img, (0, 70, 50), (12, 255, 255))
-    frame_threshold2 = cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
+        # Threshold for blood spots
+        frame_threshold1 = cv2.inRange(hsv_img, (0, 70, 50), (12, 255, 255))
+        frame_threshold2 = cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
 
-    mask_bloodspots = frame_threshold1 | frame_threshold2
+        # Combining the masks
+        mask_bloodspots.append(frame_threshold1 | frame_threshold2)
 
-    segmented_blodspots = cv2.bitwise_and(img, img, mask=mask_bloodspots)
+        # Perform bitwise operation to show bloodspots instead of BLOBS
+        segmented_blodspots_imgs.append(cv2.bitwise_and(n, n, mask=mask_bloodspots[count]))
 
-    contours, _ = cv2.findContours(mask_bloodspots, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # Make representation of BLOB / bloodspots
+        # Find contours
+        contours, _ = cv2.findContours(mask_bloodspots[count], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Find contours and draw contour + set tag
-    for cont in contours:
-        area = cv2.contourArea(cont)
-        if area > 100:
-            x, y, w, h = cv2.boundingRect(cont)
-            # Create tag
-            cv2.putText(marked_bloodspots, 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 3, (0, 0, 255), 2)
-            # Draw green contour
-            cv2.drawContours(marked_bloodspots, [cont], -1, (0,255,0), 2)
-            boolean_bloodspot = True
+        # Classify as blood spots if the spots are big enought
+        for cont in contours:
+            area = cv2.contourArea(cont)
+            if area > 100:
+                x, y, w, h = cv2.boundingRect(cont)
+                # Create tag
+                cv2.putText(marked_bloodspots_imgs[count], 'Check for blood spot', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 3, (0, 0, 255), 2)
+                # Draw green contour
+                cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
+                booleans_bloodspot.append(True)
 
-    return mask, segmented_blodspots, marked_bloodspots, boolean_bloodspot
+        count = count + 1
 
-def smallrange_isolate_img_content(img, hsv_img):
+    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot
 
-    lowerH = (99, 117)
+def segment_codOPENCV(images, show_images=False):
 
-    h, w, ch = hsv_img.shape[:3]
+    print("Started segmenting the cods!")
 
-    mask = np.zeros((h, w), np.uint8)
-    # We start segmenting
-    for y in range(h):
-        for x in range(w):
-            H = hsv_img.item(y, x, 0)
-            S = hsv_img.item(y, x, 1)
-            V = hsv_img.item(y, x, 2)
-            # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
-            if lowerH[1] > H > lowerH[0]:
-                mask.itemset((y, x), 0)
-            else:
-                mask.itemset((y, x), 255)
+    inRangeImages = []
+    segmentedImages = []
 
-    kernelOpen = np.ones((3, 3), np.uint8)
-    kernelClose = np.ones((7, 7), np.uint8)
+    for n in images:
+        hsv_img = copy.copy(n)
+        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
 
-    open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
-    close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
+        lowerH = (99, 117)
 
-    segmented_cod = cv2.bitwise_and(img, img, mask=close2)
+        h, w, ch = hsv_img.shape[:3]
 
-    return close2, segmented_cod
+        mask = np.zeros((h, w), np.uint8)
+        # We start segmenting
+        for y in range(h):
+            for x in range(w):
+                H = hsv_img.item(y, x, 0)
+                # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
+                if lowerH[1] > H > lowerH[0]:
+                    mask.itemset((y, x), 0)
+                else:
+                    mask.itemset((y, x), 255)
+
+        # Create kernels for morphology
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((7, 7), np.uint8)
+
+        # Perform morphology
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
+
+        # NEEDS TO BE CHANGED TO OUR OWN BITWISE
+        segmented_cods = cv2.bitwise_and(n, n, mask=close2)
+
+        if show_images:
+            cv2.imshow("res", segmented_cods)
+            cv2.imshow("mask", mask)
+            cv2.waitKey(0)
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmented_cods)
+
+    print("Finished segmenting the cods!")
+
+    return inRangeImages, segmentedImages
 
 def smallrange_isolate_img(hsv_img):
 
