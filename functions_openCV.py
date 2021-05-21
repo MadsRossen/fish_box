@@ -1,406 +1,336 @@
+import copy
+import os
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import copy
 
-def GrassFire(img):
-    """ Only input binary images of 0 and 255 """
-    mask = copy.copy(img)
+from functions_not_in_use import resizeImg
 
-    h, w = mask.shape[:2]
-    h = h-1
-    w = w-1
 
-    save_array = []
-    zero_array = []
-    blob_array = []
-    temp_cord = []
+def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard, show_img=False, recalibrate=False):
+    """
+    Undistorts images by a checkerboard calibration.
 
-    for y in range(h):
-        for x in range(w):
-            if mask.item(y, x) == 0 and x <= h:
-                zero_array.append(mask.item(y, x))
-            elif mask.item(y, x) == 0 and x >= w:
-                zero_array.append(mask.item(y, x))
+    SRC: https://docs.opencv.org/master/dc/dbb/tutorial_py_calibration.html
 
-    # Looping if x == 1, and some pixels has to be burned
-            while mask.item(y, x) > 0 or len(save_array) > 0:
-                mask.itemset((y, x), 0)
-                temp_cord.append([y, x])
+    :param show_img: Debug to see if all the images are loaded and all the edges are found
+    :param dimensions: The dimensions of the checkerboard from a YAML file
+    :param images_distort: The images the needs to be undistorted
+    :param images_checkerboard: The images of the checkerboard to calibrate by
+    :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
+    """
+    print('Undistorting images ... \n')
 
-                if mask.item(y - 1, x) > 0:
-                    if [y - 1, x] not in save_array:
-                        save_array.append([y - 1, x])
+    if recalibrate:
+        print('Calibrating camera please wait ... \n')
 
-                if mask.item(y, x - 1) > 0:
-                    if [y, x - 1] not in save_array:
-                        save_array.append([y, x - 1])
+        chessboardSize = (6, 9)
 
-                if mask.item(y + 1, x) > 0:
-                    if [y + 1, x] not in save_array:
-                        save_array.append([y + 1, x])
+        # termination criteria
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
 
-                if mask.item(y, x + 1) > 0:
-                    if [y, x + 1] not in save_array:
-                        save_array.append([y, x + 1])
+        # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+        objp = np.zeros((dimensions[0][1] * dimensions[1][1], 3), np.float32)
+        objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
 
-                if len(save_array) > 0:
-                    y, x = save_array.pop()
+        # Arrays to store object points and image points from all the images.
+        objpoints = []  # 3d point in real world space
+        imgpoints = []  # 2d points in image plane.
 
-                else:
-                    blob_array.append(temp_cord)
-                    temp_cord = []
-                    break
+        for img in images_checkerboard:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    return blob_array
+            # Find the chess board corners
+            ret, corners = cv2.findChessboardCorners(gray, chessboardSize, None)
 
-def doClaheLAB2(null):
-    global val2, kernel
-    val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
-    if val2 <= 1:
-        val2 = 2
-    kernel = (val2,val2)
-    res = claheHSL(img, val1/10,kernel)
-    cv2.imshow("ResultHLS", res)
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.show()
-    cv2.waitKey(0)
+            # If found, add object points, image points (after refining them)
+            if ret is True:
+                objpoints.append(objp)
+                corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                imgpoints.append(corners)
+                # Draw and display the corners
+                cv2.drawChessboardCorners(img, chessboardSize, corners2, ret)
+                if show_img:
+                    print(imgpoints)
+                    cv2.imshow('img', img)
+                    cv2.imshow('gray', gray)
+                    cv2.waitKey(0)
 
-def harrisCorner(checkeboardImg, test=False, CornerCor=True):
+        # Calibrate the camera
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
+
+        print("Done calibrating")
+
+        # Save calibration session parameters
+        print('Saving calibration session parameters in calibration/parameters_calibration_session ... \n')
+        np.save('calibration/parameters_calibration_session/mtx.npy', mtx)
+        np.save('calibration/parameters_calibration_session/dist.npy', dist)
+
+    # Loading in parameters from previous calibration session
+    mtx = np.load('calibration/parameters_calibration_session/mtx.npy')
+    dist = np.load('calibration/parameters_calibration_session/dist.npy')
+
+    print("\n Intrinsic parameters")
+    print("Camera matrix: K =")
+    print(mtx)
+    print("\nDistortion coefficients =")
+    print(dist)
+
+    # Go through all the images and undistort them
+    img_undst = []
+    for n in images_distort:
+        # Get image shape
+        h, w = n.shape[:2]
+
+        # Refine the camera matrix
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+
+        # Undistort using remapping
+        mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
+        undst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
+
+        img_undst.append(undst)
+        if show_img:
+            cv2.imshow('calibresult.png', undst)
+            cv2.waitKey(0)
+
+    print("Done undistorting images")
+
+    return img_undst
+
+
+def detect_bloodspotsOPENCV(imgs):
+
+    mask_bloodspots = []
+    segmented_blodspots_imgs = []
+    marked_bloodspots_imgs = []
+    booleans_bloodspot = []         # List of boolean values for each image classification
+    count = 0
+
+    for n in imgs:
+        hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
+
+        booleans_bloodspot.append(False)
+        marked_bloodspots_imgs.append(copy.copy(n))
+
+        '''
+        # Mean
+        frame_threshold1 = cv2.inRange(hsv_img, (0, 70, 50), (10, 255, 255))
+        frame_threshold2 = cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
+
+        # Combining the masks
+        mask_bloodspots.append(frame_threshold1 | frame_threshold2)
+        
+        # Threshold for blood spots best yet
+        frame_threshold1 = cv2.inRange(hsv_img, (0,90, 90), (10, 255, 255))
+        frame_threshold2 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
+        '''
+
+        # Threshold for blood spots
+        frame_threshold1 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
+        frame_threshold2 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
+
+        #cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
+
+        # Combining the masks
+        mask_bloodspots.append(frame_threshold1 | frame_threshold2)
+
+        # Create kernels for morphology
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((50, 50), np.uint8)
+
+        # Perform morphology
+        open = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
+        close = cv2.morphologyEx(open, cv2.MORPH_CLOSE, kernelClose)
+
+        # Perform bitwise operation to show bloodspots instead of BLOBS
+        segmented_blodspots_imgs.append(cv2.bitwise_and(n, n, mask=close))
+
+        # Make representation of BLOB / bloodspots
+        # Find contours
+        contours, _ = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Classify as blood spots if the spots are big enought
+        for cont in contours:
+            area = cv2.contourArea(cont)
+            if area > 0:
+                x, y, w, h = cv2.boundingRect(cont)
+                # Create tag
+                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
+                # Draw green contour
+                cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
+                #cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
+                booleans_bloodspot.append(True)
+
+        count = count + 1
+
+    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot
+
+
+def segment_codOPENCV(images, show_images=False):
+
+    print("Started segmenting the cod!")
+
+    inRangeImages = []
+    segmentedImages = []
+
+    for n in images:
+        hsv_img = copy.copy(n)
+        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
+
+        # Create threshold for segmenting cod
+        mask = cv2.inRange(hsv_img, (101, 21, 65), (180, 255, 255))
+
+        # Invert the mask
+        mask = (255 - mask)
+
+        # Create kernels for morphology
+        #kernelOpen = np.ones((4, 4), np.uint8)
+        #kernelClose = np.ones((7, 7), np.uint8)
+
+        kernelOpen = np.ones((9, 9), np.uint8)
+        kernelClose = np.ones((20, 20), np.uint8)
+
+        # Perform morphology
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
+
+        segmented_cods = cv2.bitwise_and(n, n, mask=close2)
+
+        if show_images:
+            cv2.imshow("res", segmented_cods)
+            cv2.imshow("mask", mask)
+            cv2.waitKey(0)
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmented_cods)
+
+    print("Finished segmenting the cod!")
+
+    return inRangeImages, segmentedImages
+
+
+def showSteps(stepsList):
+    '''
+    Create subplots showing main steps in algorithm
+
+    :return: None
     '''
 
-    :param CornerCor: Få corner coordinate set til true eller false:
-    :param checkeboardImg:
-    :param test: Til test af cornerbilleder set til true eller false:
-    :return:
+    # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
+    img_rgb = cv2.cvtColor(stepsList[0], cv2.COLOR_BGR2RGB)
+    img_undistorted_rgb = cv2.cvtColor(stepsList[1], cv2.COLOR_BGR2RGB)
+    img_cropped_rgb = cv2.cvtColor(stepsList[2], cv2.COLOR_BGR2RGB)
+    img_segmented_codrgb = cv2.cvtColor(stepsList[3], cv2.COLOR_BGR2RGB)
+    bloodspotsrgb = cv2.cvtColor(stepsList[4], cv2.COLOR_BGR2RGB)
+    marked_bloodspotssrgb = cv2.cvtColor(stepsList[5], cv2.COLOR_BGR2RGB)
+
+    fig = plt.figure()
+    fig.suptitle('Steps in algorithm', fontsize=16)
+
+    plt.subplot(3, 3, 1)
+    plt.imshow(img_rgb)
+    plt.title('Original image')
+
+    plt.subplot(3, 3, 2)
+    plt.imshow(img_undistorted_rgb)
+    plt.title('Undistorted image')
+
+    plt.subplot(3, 3, 3)
+    plt.imshow(img_cropped_rgb)
+    plt.title('ROI')
+
+    plt.subplot(3, 3, 4)
+    plt.imshow(img_segmented_codrgb)
+    plt.title('Segmented cod')
+
+    plt.subplot(3, 3, 5)
+    plt.imshow(bloodspotsrgb)
+    plt.title('Blood spots segmented')
+
+    plt.subplot(3, 3, 6)
+    plt.imshow(marked_bloodspotssrgb)
+    plt.title('Blood spots tagged')
+
+    plt.show()
+
+
+def save_imgOPENCV(imgs, path, originPathNameList):
     '''
-    img = cv2.cvtColor(checkeboardImg, cv2.COLOR_GRAY2RGB)
-
-    # Parameters
-    windowSize = 3
-    k = 0.06  # Parameter between 0.04 - 0.06
-    threshold = 10000
-
-    CheckPoints = 54
+    Saves a list of images in the folder that the path is set to.
 
-    offset = int(windowSize / 2)
-
-    x_size = checkeboardImg.shape[1] - offset
-    y_size = checkeboardImg.shape[0] - offset
-
-    nul = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-
-    # mean blur
-    blur = cv2.blur(checkeboardImg, (5, 5))
-
-    # Partial differentiation hvor ** = ^2
-    Iy, Ix = np.gradient(blur)
-    # Repræsentation af M matricen
-    Ixx = Ix ** 2
-    Ixy = Iy * Ix
-    Iyy = Iy ** 2
-
-    CornerCoordinate = []
-    # Fra offset til y_size og offset til x_size
-    print("Start running corner detection . . . ")
-
-    for y in range(offset, y_size):
-        for x in range(offset, x_size):
-
-            # Variabler for det window den kører over hver windowSize
-            start_x = x - offset
-            end_x = x + offset + 1
-            start_y = y - offset
-            end_y = y + offset + 1
+    :param originPathName: The path of the original path of the images that have been manipulated.
+    :param imgs: A list of images.
+    :param path: The path that the images will be saved to.
+    :return: None
+    '''
 
-            # Create window
-            windowIxx = Ixx[start_y: end_y, start_x: end_x]
-            windowIxy = Ixy[start_y: end_y, start_x: end_x]
-            windowIyy = Iyy[start_y: end_y, start_x: end_x]
-
-            # Summed af det enkelte window
-            Sxx = windowIxx.sum()
-            Sxy = windowIxy.sum()
-            Syy = windowIyy.sum()
+    print('Saving images')
 
-            # Beregner determinanten og dirgonalen(tracen) for mere info --> se Jacobian formula
-            det = (Sxx * Syy) - (Sxy ** 2)
-            trace = Sxx + Syy
-
-            # finder r for harris corner detection equation
-            r = det - k * (trace ** 2)
-
-            if bool(test):
-                CornerCoordinate.append([x, y, Ix[y, x], Iy[y, x], r])
-
-            if r > threshold:
-                nul.itemset((y, x), 255)
-                img.itemset((y, x, 0), 0)
-                img.itemset((y, x, 1), 255)
-                img.itemset((y, x, 2), 0)
-
-    # Create a list of corner coordinates
-    if bool(CornerCor):
-        print("Starting GrassFire . . .")
-        Objects = GrassFire(nul)
-
-        # Sort the list by the mass of objects
-        print("Number of objects: ", len(Objects))
-        ObjectsH = sorted(Objects, key=len, reverse=True)
-
-        CornerList = []
-
-        # Take the 54 biggest objects and make a circle around it. 54 = number of points at the checkerboard
-        for h in range(CheckPoints):
-            corner = np.array(ObjectsH[h])
-            y_min = min(corner[:, 0])
-            y_max = max(corner[:, 0])
-            x_min = min(corner[:, 1])
-            x_max = max(corner[:, 1])
-
-            # Calculate the center of mass for each object
-            xbb = int((x_min + x_max) / 2)
-            ybb = int((y_min + y_max) / 2)
-
-            img.itemset((ybb, xbb, 0), 255)
-            img.itemset((ybb, xbb, 1), 0)
-            img.itemset((ybb, xbb, 2), 0)
-
-            CornerList.append([ybb, xbb])
-
-            # Draw a circle around the center
-            cv2.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness=2, lineType=cv2.LINE_8)
-
-        print('Creating cornerlist file')
-        CornerFileList = open('CornerFileList', 'w')
-        CornerFileList.write('x, \t y \n')
-        for i in range(len(CornerList)):
-            CornerFileList.write(str(CornerList[i][0]) + ' , ' + str(CornerList[i][1]) + '\n')
-        CornerFileList.close()
-
-    # Create a list of Response value with the corrosponding x and y coordinate
-    if bool(test):
-        print('Creating corner file')
-
-        CornerFile = open('CornersFoundCoordniate.txt', 'w')
-        CornerFile.write('x, \t y, \t Ix, \t Iy, \t R \n')
-        for i in range(len(CornerCoordinate)):
-            CornerFile.write(str(CornerCoordinate[i][0]) + ' , ' + str(CornerCoordinate[i][1]) + ' , ' + str(
-                CornerCoordinate[i][2]) + ' , ' + str(CornerCoordinate[i][3]) + ' , ' + str(
-                CornerCoordinate[i][4]) + '\n')
-        CornerFile.close()
-
-    print('Done!')
-
-    plt.subplot(2, 2, 1)
-    plt.title("Billede")
-    plt.imshow(img, cmap='gray')
-
-    plt.subplot(2, 2, 2)
-    plt.title("Ixx")
-    plt.imshow(Ixx, cmap='gray')
-
-    plt.subplot(2, 2, 3)
-    plt.title("Iyy")
-    plt.imshow(Iyy, cmap='gray')
-
-    plt.subplot(2, 2, 4)
-    plt.title("Nul")
-    plt.imshow(nul, cmap='gray')
-
-    plt.show()
-
-    return CornerCoordinate
-
-def normHistEqualizeHLS(img):
-    fiskHLS1 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    LChannel = fiskHLS1[:,:,1]
-    HistEqualize = cv2.equalizeHist(LChannel)
-    fiskHLS1[:,:,1] = HistEqualize
-    fiskNomrHistEq = cv2.cvtColor(fiskHLS1,cv2.COLOR_HLS2BGR)
-    return fiskNomrHistEq
-
-
-def claheHSL(img,clipLimit,tileGridSize):
-    fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    LChannelHLS = fiskHLS2[:, :, 1]
-    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
-    claheLchannel1 = clahe.apply(LChannelHLS)
-    fiskHLS2[:, :, 1] = claheLchannel1
-    fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
-    return fiskClahe
-
-
-def claheLAB(img,clipLimit,tileGridSize):
-    fiskLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    LChannelLAB = fiskLAB[:, :, 0]
-    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
-    claheLchannel1 = clahe.apply(LChannelLAB)
-    fiskLAB[:, :, 0] = claheLchannel1
-    fiskClaheLAB = cv2.cvtColor(fiskLAB, cv2.COLOR_LAB2BGR)
-    return fiskClaheLAB
-
-
-def limitLchannel(img, limit):
-    max = 0
-    imgHLS = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    height, width, channels = imgHLS.shape
-    # Creating new empty image
-    newLchannel = np.zeros((height, width), dtype=np.uint8)
-    for y in range(height):
-        for x in range(width):
-            if imgHLS.item(y, x, 1) >= limit:
-                newLchannel.itemset((y, x), limit)
-                current = imgHLS.item(y, x, 1)
-                if current > max:
-                    max = current
-            else:
-                newLchannel.itemset((y, x), imgHLS.item(y, x, 1))
-    imgHLS[:, :, 1] = newLchannel
-    imgHLS = cv2.cvtColor(imgHLS, cv2.COLOR_HLS2BGR)
-    print(max)
-    return imgHLS
-
-
-def crop(img,y,x,height,width):
-    ROI = img[y:y + height, x:x + width]
-    return ROI
-
-
-def doClaheLAB1(null):
-    global val1
-    val1 = cv2.getTrackbarPos('cliplimit', 'ResultHLS')
-    res = claheHSL(img, val1/10,kernel)
-    cv2.imshow("ResultHLS", res)
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.hist(res.ravel(), 256, [0, 256]);
-    plt.show()
-
-
-def resizeImg(img, scale_percent):
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
-    dim = (width, height)
-
-    resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-    # resize image
-    return resized
-
-def meanEdgeRGB(img):
-    cv2.imshow('img', img)
-    cv2.waitKey(0)
-
-    imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-
-    ret,imgGrayBin = cv2.threshold(imgGray,0, 255,cv2.THRESH_BINARY)
-
-    kernel = np.ones((4, 4), np.uint8)
-    erosionBefore = cv2.erode(imgGrayBin, kernel)
-
-    kernel = np.ones((3, 3), np.uint8)
-    erosion = cv2.erode(erosionBefore, kernel)
-    outline = cv2.subtract(erosionBefore, erosion)
-
-    res = cv2.bitwise_and(img,img,mask = outline)
-    cv2.imshow('res', res)
-    cv2.waitKey(0)
-
-    blue = 0
-    green = 0
-    red = 0
-
-    bellyBlue = 0
-    bellyGreen = 0
-    bellyRed = 0
-
-    backBlue = 0
-    backGreen = 0
-    backRed = 0
-
-    height, width, channel = res.shape
-
-    i = 0; bi = 0; bki = 0
-    u = 0; bu = 0; bku = 0
-    k = 0; bk = 0; bkk = 0
-
-    for chan in range(channel):
-        for y in range(height):
-            for x in range(width):
-                if res.item(y,x,0) > 0:
-                    blue = blue + res.item(y,x,0)
-                    i = i + 1
-                    if y >= 130:
-                        bellyBlue = bellyBlue + res.item(y,x,0)
-                        bi = bi + 1
-                    if y < 130:
-                        backBlue = backBlue + res.item(y, x, 0)
-                        bki = bki + 1
-
-                if res.item(y,x,1) > 0:
-                    green = green + res.item(y,x,1)
-                    u = u + 1
-                    if y >= 130:
-                        bellyGreen = bellyGreen + res.item(y,x,1)
-                        bu = bu + 1
-                    if y < 130:
-                        backGreen = backGreen + res.item(y, x, 1)
-                        bku = bku + 1
-
-                if res.item(y,x,2) > 0:
-                    red = red + res.item(y,x,2)
-                    k = k + 1
-                    if y >= 130:
-                        bellyRed = bellyRed + res.item(y, x, 2)
-                        bk = bk + 1
-                    if y < 130:
-                        backRed = backRed + res.item(y, x, 2)
-                        bkk = bkk + 1
-
-    meanBlue = blue/i
-    meanGreen = green/u
-    meanRed = red/k
-
-    print('mean blue: ',meanBlue)
-    print('mean green: ',meanGreen)
-    print(' ')
-
-    meanBlueBelly = bellyBlue / bi
-    meanGreenBelly = bellyGreen / bu
-    meanRedBelly = bellyRed / bk
-
-    print('mean blue belly: ', meanBlueBelly)
-    print('mean green belly: ', meanGreenBelly)
-    print('mean red belly: ', meanRedBelly)
-    print(' ')
-
-    meanBlueBack = backBlue / bki
-    meanGreenBack = backGreen / bku
-    meanRedBack = backRed / bkk
-
-    print('mean blue back: ', meanBlueBack)
-    print('mean green back: ', meanGreenBack)
-    print('mean red back: ', meanRedBack)
-
-def SURFalignment(img1, img2):
-    # SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
-    img1Gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-
-    img2Gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-
-    orb = cv2.ORB_create(50)
-
-    kp1, des1 = orb.detectAndCompute(img1Gray,None)
-    kp2, des2 = orb.detectAndCompute(img2Gray, None)
-
-    img1Kp = cv2.drawKeypoints(img1, kp1, None, flags=None)
-    img2Kp = cv2.drawKeypoints(img2, kp2, None, flags=None)
-
-    cv2.imshow('img1Kp', img1Kp)
-    cv2.imshow('img2Kp', img2Kp)
-    cv2.waitKey(0)
+    count = 0
+    if len(imgs) > 1:
+        for n in imgs:
+            cv2.imwrite(path + f"\\{originPathNameList[count]}_marked.JPG", n)
+            count = count + 1
 
+    print('Done saving images')
 
 
+def crop(images, y, x, height, width):
+    '''
+    Crops images
+    :param images:
+    :return: Cropped images
+    '''
 
+    print("Cropping images ... ")
+    cropped_images = []
+    for n in images:
+        ROI = n[y:y + height, x:x + width]
+        cropped_images.append(ROI)
 
+    print("Done cropping images!")
+
+    return cropped_images
+
+
+def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
+    """
+    Loads all the images inside a file.
+
+    :return: All the images in a list and its file names.
+    """
+
+    images = []
+    class_names = []
+    img_list = os.listdir(path)
+    print("Loading in images...")
+    print("Total images found:", len(img_list))
+    for cl in img_list:
+        # Find all the images in the file and save them in a list without the ".jpg"
+        cur_img = cv2.imread(f"{path}/{cl}", 1)
+        img_name = os.path.splitext(cl)[0]
+
+        # Do some quick images processing to get better pictures if the user wants to
+        if edit_images:
+            cur_img_re = resizeImg(cur_img, scaling_percentage)
+            cur_img = cur_img_re
+
+        # Show the image before we append it, to make sure it is read correctly
+        if show_img:
+            cv2.imshow(f"Loaded image: {img_name}", cur_img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        # Append them into the list
+        images.append(cur_img)
+        class_names.append(img_name)
+
+    # Remove the image window after we have checked all the pictures
+    cv2.destroyAllWindows()
+
+    print("Done loading the images!")
+
+    return images, class_names, img_list
