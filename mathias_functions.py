@@ -6,6 +6,50 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
+def showSteps(stepsList):
+    '''
+    Create subplots showing main steps in algorithm
+
+    :return: None
+    '''
+
+    # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
+    img_rgb = cv2.cvtColor(stepsList[0], cv2.COLOR_BGR2RGB)
+    img_undistorted_rgb = cv2.cvtColor(stepsList[1], cv2.COLOR_BGR2RGB)
+    img_cropped_rgb = cv2.cvtColor(stepsList[2], cv2.COLOR_BGR2RGB)
+    img_segmented_codrgb = cv2.cvtColor(stepsList[3], cv2.COLOR_BGR2RGB)
+    bloodspotsrgb = cv2.cvtColor(stepsList[4], cv2.COLOR_BGR2RGB)
+    marked_bloodspotssrgb = cv2.cvtColor(stepsList[5], cv2.COLOR_BGR2RGB)
+
+    fig = plt.figure()
+    fig.suptitle('Steps in algorithm', fontsize=16)
+
+    plt.subplot(3, 3, 1)
+    plt.imshow(img_rgb)
+    plt.title('Original image')
+
+    plt.subplot(3, 3, 2)
+    plt.imshow(img_undistorted_rgb)
+    plt.title('Undistorted image')
+
+    plt.subplot(3, 3, 3)
+    plt.imshow(img_cropped_rgb)
+    plt.title('ROI')
+
+    plt.subplot(3, 3, 4)
+    plt.imshow(img_segmented_codrgb)
+    plt.title('Segmented cod')
+
+    plt.subplot(3, 3, 5)
+    plt.imshow(bloodspotsrgb)
+    plt.title('Blood spots segmented')
+
+    plt.subplot(3, 3, 6)
+    plt.imshow(marked_bloodspotssrgb)
+    plt.title('Blood spots tagged')
+
+    plt.show()
+
 def save_imgOPENCV(imgs, path, originPathNameList):
     '''
     Saves a list of images in the folder that the path is set to.
@@ -111,14 +155,16 @@ def segment_codOPENCV(images, show_images=False):
         mask = (255 - mask)
 
         # Create kernels for morphology
-        kernelOpen = np.ones((4, 4), np.uint8)
-        kernelClose = np.ones((7, 7), np.uint8)
+        #kernelOpen = np.ones((4, 4), np.uint8)
+        #kernelClose = np.ones((7, 7), np.uint8)
+
+        kernelOpen = np.ones((9, 9), np.uint8)
+        kernelClose = np.ones((20, 20), np.uint8)
 
         # Perform morphology
         open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
         close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
 
-        # NEEDS TO BE CHANGED TO OUR OWN BITWISE
         segmented_cods = cv2.bitwise_and(n, n, mask=close2)
 
         if show_images:
