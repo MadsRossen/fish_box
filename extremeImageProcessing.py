@@ -404,10 +404,12 @@ def saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage):
 
     f = open("CDI.txt", "w+")
 
+    line = ("-----------------------------------------------------------------\n")
+
     # Layout for CDI
     f.write("CDI\n\n")
     f.write("              |Category: \t|Wounds \n")
-    f.write("----------------------------------------\n")
+    f.write(line)
     f.write("FISH:\n")
 
     # Fill CDI
@@ -415,12 +417,13 @@ def saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage):
         name = os.path.splitext(img_list_fish[i])[0]
 
         if boolean_bloodspot[i]:
-            f.write("----------------------------------------\n")
+            f.write(line)
             f.write("%s \t\t\t|x, coverage = " %name)
-            f.write("%d %" %percSpotCoverage)
+            f.write("%.3f" %percSpotCoverage[i])
+            f.write("%\n")
         elif boolean_bloodspot[i] == False:
-            f.write("----------------------------------------\n")
+            f.write(line)
             f.write("%s \t\t\t| \n" %name)
 
-    f.write("----------------------------------------\n")
+    f.write(line)
     f.close()

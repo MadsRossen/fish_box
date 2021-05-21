@@ -71,11 +71,12 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
     mtx = np.load('calibration/parameters_calibration_session/mtx.npy')
     dist = np.load('calibration/parameters_calibration_session/dist.npy')
 
-    print("\n Intrinsic parameters")
+    print("Intrinsic parameters:")
     print("Camera matrix: K =")
     print(mtx)
     print("\nDistortion coefficients =")
-    print(dist)
+    print(dist, "\n")
+
 
     # Go through all the images and undistort them
     img_undst = []
@@ -106,6 +107,7 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
     segmented_blodspots_imgs = []
     marked_bloodspots_imgs = []
     booleans_bloodspot = []         # List of boolean values for each image classification
+    percSpotCoverage = []
     count = 0
 
     # Find biggest contour
@@ -165,7 +167,8 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
 
                 totalSpotArea = totalSpotArea + area
 
-        percSpotCoverage = fishArea/totalSpotArea*100
+
+        percSpotCoverage.append(totalSpotArea/fishArea*100)
 
         count = count + 1
 
