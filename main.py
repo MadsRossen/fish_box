@@ -2,6 +2,7 @@ import time
 
 import cv2
 
+from extremeImageProcessing import saveCDI
 from functions_openCV import checkerboard_calibrateOPENCV, detect_bloodspotsOPENCV, segment_codOPENCV, showSteps, \
     save_imgOPENCV, crop, loadImages
 from yamlLoader import yaml_loader, setup_parameters
@@ -52,12 +53,15 @@ if openCV:
     stepsList.append(img_segmented_cod[showFish])
 
     # Blood spot detection
-    mask_bloodspots, bloodspots, marked_bloodspots, boolean_bloodspot = detect_bloodspotsOPENCV(img_segmented_cod)
+    mask_bloodspots, bloodspots, marked_bloodspots, boolean_bloodspot, percSpotCoverage = detect_bloodspotsOPENCV(img_segmented_cod, mask_cod)
     stepsList.append(bloodspots[showFish])
     stepsList.append(marked_bloodspots[showFish])
 
     # Save marked blood spots images in folder
     save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images', img_list_fish)
+
+    # Save a .txt file with CDI (catch damage index)
+    saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage)
 
     # Check how long it took for algorithm to finish
     end_time = time.time()

@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import cv2
 import warnings
@@ -396,3 +398,29 @@ def grassfire_v2(mask):
     cv2.waitKey(0)
 
     return 0
+
+
+def saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage):
+
+    f = open("CDI.txt", "w+")
+
+    # Layout for CDI
+    f.write("CDI\n\n")
+    f.write("              |Category: \t|Wounds \n")
+    f.write("----------------------------------------\n")
+    f.write("FISH:\n")
+
+    # Fill CDI
+    for i in range(len(img_list_fish)):
+        name = os.path.splitext(img_list_fish[i])[0]
+
+        if boolean_bloodspot[i]:
+            f.write("----------------------------------------\n")
+            f.write("%s \t\t\t|x, coverage = " %name)
+            f.write("%d %" %percSpotCoverage)
+        elif boolean_bloodspot[i] == False:
+            f.write("----------------------------------------\n")
+            f.write("%s \t\t\t| \n" %name)
+
+    f.write("----------------------------------------\n")
+    f.close()

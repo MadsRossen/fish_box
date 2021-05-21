@@ -100,7 +100,7 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
     return img_undst
 
 
-def detect_bloodspotsOPENCV(imgs):
+def detect_bloodspotsOPENCV(imgs, maskCod):
 
     mask_bloodspots = []
     segmented_blodspots_imgs = []
@@ -108,41 +108,35 @@ def detect_bloodspotsOPENCV(imgs):
     booleans_bloodspot = []         # List of boolean values for each image classification
     count = 0
 
+    # Find biggest contour
     for n in imgs:
         hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
+        biggestarea = 0
+        fishContours, __ = cv2.findContours(maskCod[count], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for cont in fishContours:
+            area = cv2.contourArea(cont)
+            if area > biggestarea:
+                biggestarea = area
 
-        booleans_bloodspot.append(False)
+        fishArea = biggestarea
+
+        bloodspot = False
+        spotcount = 0
+
         marked_bloodspots_imgs.append(copy.copy(n))
-
-        '''
-        # Mean
-        frame_threshold1 = cv2.inRange(hsv_img, (0, 70, 50), (10, 255, 255))
-        frame_threshold2 = cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
-
-        # Combining the masks
-        mask_bloodspots.append(frame_threshold1 | frame_threshold2)
-        
-        # Threshold for blood spots best yet
-        frame_threshold1 = cv2.inRange(hsv_img, (0,90, 90), (10, 255, 255))
-        frame_threshold2 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
-        '''
 
         # Threshold for blood spots
         frame_threshold1 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
-        frame_threshold2 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
-
-        #cv2.inRange(hsv_img, (170, 70, 50), (180, 255, 255))
 
         # Combining the masks
-        mask_bloodspots.append(frame_threshold1 | frame_threshold2)
+        mask_bloodspots.append(frame_threshold1)
 
         # Create kernels for morphology
-        kernelOpen = np.ones((3, 3), np.uint8)
-        kernelClose = np.ones((50, 50), np.uint8)
+        kernelClose = np.ones((30, 30), np.uint8)
 
         # Perform morphology
-        open = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
-        close = cv2.morphologyEx(open, cv2.MORPH_CLOSE, kernelClose)
+        #open = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
+        close = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_CLOSE, kernelClose)
 
         # Perform bitwise operation to show bloodspots instead of BLOBS
         segmented_blodspots_imgs.append(cv2.bitwise_and(n, n, mask=close))
@@ -152,20 +146,32 @@ def detect_bloodspotsOPENCV(imgs):
         contours, _ = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Classify as blood spots if the spots are big enought
+        totalSpotArea = 0
         for cont in contours:
             area = cv2.contourArea(cont)
-            if area > 0:
+            if area > 50:
                 x, y, w, h = cv2.boundingRect(cont)
                 # Create tag
                 cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
                 # Draw green contour
                 cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
                 #cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
-                booleans_bloodspot.append(True)
+
+                # Because the biologists have put a red tag on the cod, there will always be detected at least 1 blood
+                # spot
+                spotcount = spotcount + 1
+                if spotcount > 1:
+                    bloodspot = True
+
+                totalSpotArea = totalSpotArea + area
+
+        percSpotCoverage = fishArea/totalSpotArea*100
 
         count = count + 1
 
-    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot
+        booleans_bloodspot.append(bloodspot)
+
+    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot, percSpotCoverage
 
 
 def segment_codOPENCV(images, show_images=False):
