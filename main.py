@@ -7,9 +7,11 @@ import sys
 
 # Check if the user wanna use our functions or not
 run_own_functions = sys.argv[1]
+experimental = sys.argv[2]
 
 if run_own_functions == 'y':
-    print("Running program with own built functions")
+
+    print("Running program with own built-in functions")
 
     # Check the runtime
     start_time = time.time()
@@ -21,40 +23,48 @@ if run_own_functions == 'y':
     kernels, checkerboard_dimensions, paths, clahe, cali_pa = yamlL.setup_parameters(yaml_data)
 
     # load Fish images
-    images, names = ft.loadImages(paths[0][1], False, False, 40)
-
-    # Load checkerboard images
-    img_cali, names_cali = ft.loadImages(paths[1][1], False, False, 40)
+    images, names = ft.loadImages(paths[0][1], False, False, 60)
 
     # Calibrate camera and undistort images
-    fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
-                              cali_pa[5][1], True)
+    #fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
+                              #cali_pa[5][1], True)
 
     # Crop to ROI
     cropped_images = eip.crop(images, 700, 450, 600, 2200)
 
     # Threshold to create a mask for each image
-    # masks, segmented_images = eip.segment_cod(cropped_images, clahe[0][1], clahe[1][1], False)
     masks, segmented_images = eip.segment_cod(cropped_images, False)
 
-    # Bloodspot detection
-    # blodspot_img = ft.detect_bloodspots()
+    # Use morphology on images
+    images_morph, res_images = ft.morphology_operations(masks, segmented_images, 5, 7, False, False)
 
-    # Get the contours
-    contour = ft.find_contours(masks, cropped_images, False, True)
+    # Blood spot detection
+    _, _, marked_bloodspots_imgs, _ = ft.detect_bloodspots(res_images)
 
-    # Find contours middle point
-    xcm, ycm = ft.contour_MOC(cropped_images, contour)
+    image_display = 0
+    if experimental == 'e':
+        # Get the contours
+        contour = ft.find_contours(masks, cropped_images, False, False)
 
-    # Raytracing
-    rot_img = ft.rotateImages(cropped_images, xcm, ycm, contour)
+        # Find contours middle point
+        xcm, ycm = ft.contour_MOC(cropped_images, contour)
 
-    print("Execution time for optimized item/itemset function: ", "--- %s seconds ---" % (time.time() - start_time))
+        # Raytracing
+        rot_img = ft.rotateImages(cropped_images, xcm, ycm, contour)
+
+        # Display the final images
+        image_display = rot_img[0]
+    else:
+        # Display the final images
+        image_display = segmented_images[0]
 
     # Display the final images
-    cv2.imshow("Final", rot_img[0])
+    cv2.imshow("Final segmented image", image_display)
+    cv2.imshow("Final bloodspot detection", marked_bloodspots_imgs[0])
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))
 
 elif not run_own_functions == "n":
 
@@ -101,4 +111,4 @@ elif not run_own_functions == "n":
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
+    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))

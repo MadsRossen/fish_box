@@ -4,30 +4,18 @@ import os
 import math
 import warnings
 import extremeImageProcessing as eip
+import copy
 
 from matplotlib import pyplot as plt  # --- Is this still used in final?
 # A library that has a equalize matcher!
 from skimage.exposure import match_histograms  # --- Is this still used in final?
 
 
-def user_input():
-    """
-    This function returns the users keyinput for Y and N.
-
-    :return: Y returns true, N returns false
-    """
-    key = cv2.waitKey(1)
-    if key == ord('y'):
-        return True
-    elif key == ord('n'):
-        return False
-
-
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     """
     Loads all the images inside a file.
 
-    :return: All the images in a list and its file names.
+    :return: All the images in an array and its file names.
     """
 
     images = []
@@ -36,7 +24,7 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     print("Loading in images...")
     print("Total images found:", len(img_list))
     for cl in img_list:
-        # Find all the images in the file and save them in a list without the ".jpg"
+        # Find all the images in the file and save them in an array without the ".jpg"
         cur_img = cv2.imread(f"{path}/{cl}", 1)
         img_name = os.path.splitext(cl)[0]
 
@@ -51,7 +39,7 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-        # Append them into the list
+        # Append them into the array
         images.append(cur_img)
         class_names.append(img_name)
 
@@ -63,73 +51,49 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     return images, class_names
 
 
-def save_img(img):
+def save_img(img, save_image_path):
     """
     Saves image(s) in a file directory.
 
+    :param save_image_path: The path to the directory to save images
     :param img: An image or an array of images to save in a file
     """
-    out_folder_processed_images_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"    # Make into Yaml parameter path
+
     count = 0
+    # Check if we have one or several images we wanna save
     if len(img) < 1:
         for n in img:
+            # Count one for each image so we can name them differently and with numbers
             count = count+1
-            cv2.imwrite(out_folder_processed_images_path+f"\\fish{count}.jpg", n)
+            cv2.imwrite(save_image_path+f"\\fish{count}.jpg", n)
     else:
-        cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
-
-
-
-def replaceHighlights(main_img, spec_img, limit):
-    """
-    This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
-
-    :param main_img: The image of which will get the pixels replaced with the specular image
-    :param spec_img: The image of which will be used to replace the pixels of the main image
-    :param limit: The limits of a pixel value before it is classified as a specular highlight
-    :return: The image that has the highlights replaced
-    """
-
-    print("Replacing highlights...")
-
-    # Create copy
-    img_main_cop = np.copy(main_img)
-    img_spec_cop = np.zeros((spec_img.shape[0], spec_img.shape[1], 3), np.uint8)
-
-    # Isolate the areas where the color is white
-    main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
-                             (img_main_cop[:, :, 2] >= limit))
-
-    img_spec_cop[main_img_spec] = spec_img[main_img_spec]
-    img_main_cop[main_img_spec] = (0, 0, 0)
-
-    img_main_cop[main_img_spec] = img_spec_cop[main_img_spec]
-
-    # Different methods, find out what works best later
-    match = match_histograms(img_spec_cop, img_main_cop, multichannel=True)
-    match2 = match_histograms(spec_img, img_main_cop, multichannel=True)
-
-    # Replace pixels, replace the matches to use different methods
-    img_main_cop[main_img_spec] = match2[main_img_spec]
-
-    cv2.imshow("match", match2)
-    cv2.imshow("spec_img", spec_img)
-    cv2.imshow("final", img_main_cop)
-    cv2.imshow("Spec", img_spec_cop)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    print("Done replacing the highlights!")
-
-    return img_main_cop
+        cv2.imwrite(save_image_path+"\\fish.jpg", img)
 
 
 def claheHSL(img, clipLimit, tileGridSize):
+    """
+    Turns an image into a claheHSL image.
+
+    :param img: The main image
+    :param clipLimit: Set in parameters
+    :param tileGridSize: Set in parameters
+    :return: The claheHSL image
+    """
+
+    # Convert BGR to HSL
     fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+
+    # Get the first channel
     LChannelHLS = fiskHLS2[:, :, 1]
+
+    # Create clahe using the cliplimit and tileGridSize set from parameters
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+
+    # Apply the first channel
     claheLchannel1 = clahe.apply(LChannelHLS)
     fiskHLS2[:, :, 1] = claheLchannel1
+
+    # Convert back to BGR from HLS
     fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
 
     return fiskClahe
@@ -153,15 +117,197 @@ def resizeImg(img, scale_percent):
     return resized
 
 
+def detect_bloodspots(imgs):
+
+    print("Started detecting blood spots...")
+
+    mask_bloodspots = []
+    segmented_blodspots_imgs = []
+    marked_bloodspots_imgs = []
+    booleans_bloodspot = []         # List of boolean values for each image classification
+    count = 0
+
+    for n in imgs:
+        hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
+
+        booleans_bloodspot.append(False)
+        marked_bloodspots_imgs.append(copy.copy(n))
+
+        # Threshold for blood spots
+        H_range = (0, 10)
+        S_range = (90, 255)
+        V_range = (90, 255)
+
+        #frame_threshold1 = eip.findInRange(hsv_img, [H_range, S_range, V_range])
+        frame_threshold1 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
+
+        cv2.imshow("Test", frame_threshold1)
+        cv2.waitKey(0)
+
+        # Combining the masks
+        mask_bloodspots.append(frame_threshold1)
+
+        # Create kernels for morphology
+        kernelOpen = 3
+        kernelClose = 51
+
+        # Perform morphology
+        # open_morph = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
+        # close_morph = cv2.morphologyEx(open_morph, cv2.MORPH_CLOSE, kernelClose)
+
+        masks, _ = morphology_operations(mask_bloodspots, imgs, kernelOpen, kernelClose, False, False)
+
+        # Perform bitwise operation to show bloodspots instead of BLOBS
+        segmented_blodspots_imgs.append(eip.bitwise_and(n, masks[count]))
+
+        # Make representation of BLOB / bloodspots
+        # Find contours
+        contours, _ = cv2.findContours(masks[count], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        cv2.imshow("IMGHSV", masks[count])
+        cv2.waitKey(0)
+
+        # Classify as blood spots if the spots are big enought
+        for cont in contours:
+            area = cv2.contourArea(cont)
+            if area > 0:
+                x, y, w, h = cv2.boundingRect(cont)
+                # Create tag
+                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
+                # Draw green contour
+                cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
+                #cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
+                booleans_bloodspot.append(True)
+
+        count = count + 1
+
+    print("Finished detecting blood spots!")
+
+    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot
+
+
+# Used for the trackbars
+def nothing(x):
+    pass
+
+
+def open_close_trackbars():
+    """
+    This function allows for kernel value editing with trackbars in find_contours.
+
+    :return: Kernel values for open and close
+    """
+
+    # Set kernel values for open and close
+    kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+    kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+
+    # Make sure it's only uneven numbers for the kernels
+    if kernel_val_open_val % 2 == 0:
+        cv2.setTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value", kernel_val_open_val + 1)
+        kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
+
+    if kernel_val_close_val % 2 == 0:
+        cv2.setTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value", kernel_val_close_val + 1)
+        kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
+
+    return kernel_val_open_val, kernel_val_close_val
+
+
+def morphology_operations(masks, images, open_kern_val, close_kern_val, change_kernel=False, show_img=False):
+
+    """
+    Uses open and close morphology on a given array of masks. Also shows the res images when the masks is combined
+    with the normal images.
+
+    :param close_kern_val: An integer for the close kernel value
+    :param open_kern_val: An integer for the open kernel value
+    :param masks: The masks to use morphology on
+    :param images: The images to add to the masks when creating the res
+    :param change_kernel: Enables trackbars to change kernel values
+    :param show_img: To either show the results or not
+    :return: An array of masks with morphology applied and the res images
+    """
+
+    # To make editing the kernel possible
+    if change_kernel:
+        # Create trackbar window and trackbars for open and close
+        cv2.namedWindow("Adjust_Hue_Satuation_Value")
+        cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+        cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+
+    # Values for each image
+    old_open_val, old_closes_val = 0, 0
+    image_n = 0
+    closing = None
+    closing_array = []
+    res_array = []
+    # Looping through each mask
+    for n in masks:
+        print(n)
+        while True:
+            # If we wanna change the kernel by trackbar
+            if change_kernel:
+                kernel_val_open_val, kernel_val_close_val = open_close_trackbars()
+            else:
+                kernel_val_open_val, kernel_val_close_val = open_kern_val, close_kern_val
+
+            # Make kernels for each morph type
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
+            kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
+
+            # To make
+            # if n < 1:
+                # n = masks
+
+            # Only use opening and closing when the slider is moved instead of every frame
+            if old_open_val != kernel_val_open_val or old_closes_val != kernel_val_close_val or change_kernel is False:
+                opening = eip.morph_open(n, kernel_open)
+                closing = eip.morph_close(opening, kernel_close)
+                old_open_val = kernel_val_open_val
+                old_closes_val = kernel_val_close_val
+
+            # To see how much of the fish we are keeping
+            if closing is not None:
+                res = eip.bitwise_and(images[image_n], closing)
+            else:
+                warnings.warn("The closing or open operation is None!")
+
+            # If the user wanna change the kernel values
+            if change_kernel:
+                cv2.imshow("Adjust_Hue_Satuation_Value", closing)
+
+            # For debugging
+            if show_img:
+                cv2.imshow("Mask Closing", closing)
+                cv2.imshow("Res", res)
+
+            # Break the while loop if esc is pressed
+            key = cv2.waitKey(1)
+            if key == 27 or change_kernel is False:
+                break
+
+        closing_array.append(closing)
+        res_array.append(res)
+
+    return closing_array, res_array
+
+
+############# THE REST FROM HERE IS EXPERIMENTAL AND ALSO CONTIANS OPENCV FUNCTIONS ##########
+############# THEY ARE NOT PART OF THE MAIN PROGRAM.                                 ##########
+
+
 def createDict():
     '''
     Custom dictionary for storing length and angle values for each contour.
+
     :return: Dictionary with length and angle array.
     '''
     dict = {
         "length": [],
         "angle": []
     }
+
     return dict
 
 
@@ -178,9 +324,11 @@ def contour_MOC(orig_img, contours):
 
     print("Finding maximum and minimum coordinates for each contours and then cropping...")
 
+    # To see if both are the correct amount
     print(f"Original images length: {len(orig_img)}")
     print(f"Contours len: {len(contours)}")
 
+    # Save the height and width for each image in an array
     height = []
     width = []
     for n in orig_img:
@@ -214,16 +362,17 @@ def contour_MOC(orig_img, contours):
 
 def find_biggest_contour(cnt):
     """
-    Returns the biggest contour in a list of contours.
+    Returns the biggest contour in an array of contours.
 
-    :param cnt: A list of contours
-    :return: The biggest contour inside the list
+    :param cnt: An array of contours
+    :return: The biggest contour inside the array
     """
     print("Finding the biggest contours...")
-    longest_list = 0
+
+    biggest_contour = 0
     biggest_cnt = None
     for n in cnt:
-        if cv2.contourArea(n) > longest_list:
+        if cv2.contourArea(n) > biggest_contour:
             biggest_cnt = n
         else:
             continue
@@ -233,55 +382,35 @@ def find_biggest_contour(cnt):
     return biggest_cnt
 
 
-# Used for the trackbars
-def nothing(x):
-    pass
-
-
-def open_close_trackbars():
-    """
-    This function allows for kernel value editing with trackbars in find_contours.
-
-    :return: Kernel values for open and close
-    """
-    cv2.namedWindow("Adjust_Hue_Satuation_Value")
-    cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
-    cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
-
-    kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
-    kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
-
-    # Make sure it's only uneven numbers for the kernels
-    if kernel_val_open_val % 2 == 0:
-        cv2.setTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value", kernel_val_open_val + 1)
-        kernel_val_open_val = cv2.getTrackbarPos("kernel open", "Adjust_Hue_Satuation_Value")
-
-    if kernel_val_close_val % 2 == 0:
-        cv2.setTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value", kernel_val_close_val + 1)
-        kernel_val_close_val = cv2.getTrackbarPos("kernel close", "Adjust_Hue_Satuation_Value")
-
-    return kernel_val_open_val, kernel_val_close_val
-
-
 def find_contours(masks, images, change_kernel=False, show_img=False):
     """
-    Returns the biggest contour for a list of images.
+    Returns the biggest contour for an array of images.
 
     :param show_img: Weather or not to display the morphed images
     :param change_kernel: Changes weather or not to change the kernels by trackbars. If left false, it will use the
     default parameters 5 and 7 for open and close respectively
     :param masks: Masks to find contours of
-    :param images: A list of images to find contours inside
-    :return: A list with the biggest contour for each image
+    :param images: An array of images to find contours inside
+    :return: An array with the biggest contour for each image
     """
 
     print("Finding contours...")
 
+    # To make editing the kernel possible
+    if change_kernel:
+        # Create trackbar window and trackbars for open and close
+        cv2.namedWindow("Adjust_Hue_Satuation_Value")
+        cv2.createTrackbar("kernel open", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+        cv2.createTrackbar("kernel close", "Adjust_Hue_Satuation_Value", 2, 20, nothing)
+
+    # Values for each image
     old_open_val, old_closes_val = 0, 0
     contours = []
     image_n = 0
     opening = None
     closing = None
+
+    # Looping through each mask
     for n in masks:
         while True:
             # If we wanna change the kernel by trackbar
@@ -487,27 +616,45 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
         return images_distort
 
 
-def detect_bloodspots(hsv_img):
-    lowerH = (80, 125)
-    lowerS = (153, 204)
-    lowerv = (115, 140)
+def replaceHighlights(main_img, spec_img, limit):
+    """
+    This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
 
-    h, w, ch = hsv_img.shape[:3]
+    :param main_img: The image of which will get the pixels replaced with the specular image
+    :param spec_img: The image of which will be used to replace the pixels of the main image
+    :param limit: The limits of a pixel value before it is classified as a specular highlight
+    :return: The image that has the highlights replaced
+    """
 
-    segmentedImg = np.zeros((h, w), np.uint8)
-    # We start segmenting
-    for y in range(h):
-        for x in range(w):
-            H = hsv_img.item(y, x, 0)
-            S = hsv_img.item(y, x, 1)
-            V = hsv_img.item(y, x, 2)
-            # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
-            if lowerH[1] > H > lowerH[0]:
-                segmentedImg.itemset((y, x), 0)
-            # If Hue lies in the lowerValRange(black value range) we want to segment it out
-            elif lowerv[1] > V > lowerv[0]:
-                segmentedImg.itemset((y, x), 0)
-            elif lowerS[1] > S > lowerS[0]:
-                segmentedImg.itemset((y, x), 0)
-            else:
-                segmentedImg.itemset((y, x), 255)
+    print("Replacing highlights...")
+
+    # Create copy
+    img_main_cop = np.copy(main_img)
+    img_spec_cop = np.zeros((spec_img.shape[0], spec_img.shape[1], 3), np.uint8)
+
+    # Isolate the areas where the color is white
+    main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
+                             (img_main_cop[:, :, 2] >= limit))
+
+    img_spec_cop[main_img_spec] = spec_img[main_img_spec]
+    img_main_cop[main_img_spec] = (0, 0, 0)
+
+    img_main_cop[main_img_spec] = img_spec_cop[main_img_spec]
+
+    # Different methods, find out what works best later
+    match = match_histograms(img_spec_cop, img_main_cop, multichannel=True)
+    match2 = match_histograms(spec_img, img_main_cop, multichannel=True)
+
+    # Replace pixels, replace the matches to use different methods
+    img_main_cop[main_img_spec] = match2[main_img_spec]
+
+    cv2.imshow("match", match2)
+    cv2.imshow("spec_img", spec_img)
+    cv2.imshow("final", img_main_cop)
+    cv2.imshow("Spec", img_spec_cop)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    print("Done replacing the highlights!")
+
+    return img_main_cop

@@ -51,8 +51,50 @@ def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=Fals
     return undistortedImgs
 
 
-def crop(images, y, x, height, width):
+def findInRange(hsv_img, range_hsv=[]):
 
+    lowerH = (range_hsv[0][0], range_hsv[0][1])
+    lowerS = (range_hsv[1][0], range_hsv[1][1])
+    lowerV = (range_hsv[2][0], range_hsv[2][1])
+
+    print(range_hsv)
+    print(lowerS)
+    print(lowerV)
+
+    h, w, ch = hsv_img.shape[:3]
+
+    segmentedImg = np.zeros((h, w), np.uint8)
+    # We start segmenting
+    for y in range(h):
+        for x in range(w):
+            H = hsv_img.item(y, x, 0)
+            S = hsv_img.item(y, x, 1)
+            V = hsv_img.item(y, x, 2)
+            # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
+            if lowerH[1] > H > lowerH[0]:
+                segmentedImg.itemset((y, x), 0)
+            elif lowerS[1] > S > lowerS[0]:
+                segmentedImg.itemset((y, x), 0)
+            # If Hue lies in the lowerValRange(black value range) we want to segment it out
+            elif lowerV[1] > V > lowerV[0]:
+                segmentedImg.itemset((y, x), 0)
+            else:
+                segmentedImg.itemset((y, x), 255)
+
+    return segmentedImg
+
+
+def crop(images, y, x, height, width):
+    """
+    Crops images to specified area
+
+    :param images: An array of images to crop
+    :param y: The Y value of the crop point
+    :param x: The X value of the crop point
+    :param height: The height of the cropped part
+    :param width: The width of the cropped part
+    :return: An array of cropped images
+    """
     cropped_images = []
     for n in images:
         ROI = n[y:y + height, x:x + width]
@@ -189,10 +231,6 @@ def morph_open(mask, kernel):
     return dilate
 
 
-def find_contours():
-    print("Find contours")
-
-
 def grayScaling(img):
     """
     Function that will convert a BGR image to a mean valued greyscale image.
@@ -222,10 +260,13 @@ def convert_RGB_to_HSV(img):
 
     width, height, channel = img.shape
 
+    # Get each color channel of the image
     B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
 
+    # Create a clone of the other image with the same height and width
     hsv_img = np.zeros(img.shape, dtype=np.uint8)
 
+    # For each pixel in the image
     for i in range(width):
         for j in range(height):
 
@@ -260,7 +301,12 @@ def convert_RGB_to_HSV(img):
 
 
 def grassFire(mask):
-    """ Only input binary images of 0 and 255 """
+    """
+    A grassfire algorithm for BLOB detection. Only input binary images of 0 and 255.
+
+    :param mask: The mask to extract BLOBS from
+    :return: An array of BLOBS
+    """
     mask_copy = copy.copy(mask)
 
     h, w = mask_copy.shape[:2]
@@ -273,6 +319,7 @@ def grassFire(mask):
     blob_array = []
     temp_cord = []
 
+    # For each pixel in the mask
     for y in range(h):
         for x in range(w):
             if mask_copy.item(y, x) == 0 and x <= h:
@@ -314,16 +361,27 @@ def grassFire(mask):
 
 
 def segment_cod(images, show_images=False):
+    """
+    Segments the cod from the background in each image using HSV.
 
-    print("Started segmenting the cods!")
+    :param images: The images to isolate the cods from
+    :param show_images: Tells the function whether or not display images. Mostly used for debugging
+    :return:
+    """
+
+    print("Started segmenting the cods...")
 
     inRangeImages = []
     segmentedImages = []
 
     for img in images:
-        hsv_img = copy.copy(img)
-        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
 
+        # Convert image to HSV from BGR
+        hsv_img = copy.copy(img)
+
+        hsv_img = convert_RGB_to_HSV(hsv_img)
+
+        # Define the lower hue value to be blue.
         lowerH = (99, 117)
 
         h, w, ch = hsv_img.shape[:3]
@@ -333,24 +391,14 @@ def segment_cod(images, show_images=False):
         for y in range(h):
             for x in range(w):
                 H = hsv_img.item(y, x, 0)
-                S = hsv_img.item(y, x, 1)
-                V = hsv_img.item(y, x, 2)
                 # If Hue lies in th lowerHueRange(Blue hue range) we want to segment it out
                 if lowerH[1] > H > lowerH[0]:
                     mask.itemset((y, x), 0)
                 else:
                     mask.itemset((y, x), 255)
 
-        # Create kernels for morphology
-        kernelOpen = np.ones((3, 3), np.uint8)
-        kernelClose = np.ones((7, 7), np.uint8)
-
-        # Perform morphology
-        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
-        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
-
-        # NEEDS TO BE CHANGED TO OUR OWN BITWISE
-        segmented_cod = cv2.bitwise_and(img, img, mask=close2)
+        # For easier representation
+        segmented_cod = bitwise_and(img, mask)
 
         if show_images:
             cv2.imshow("res", segmented_cod)
@@ -360,7 +408,7 @@ def segment_cod(images, show_images=False):
             if key == 27:
                 break
 
-        # add to lists
+        # add to array
         inRangeImages.append(mask)
         segmentedImages.append(segmented_cod)
 
