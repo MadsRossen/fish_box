@@ -24,13 +24,15 @@ print("Brew a cup of coffee or something, this is going to take some time")
 
 # Parameters
 windowSize = 3
-k = 0.04 # Parameter between 0.04 - 0.06
-threshold = 1000
+k = 0.04                                                    # Parameter between 0.04 - 0.06
+threshold = 10                                              # Threshold for R value representing corner response value
+checkerboard_size = [9,6]
+CheckPoints = checkerboard_size[0] * checkerboard_size[1]   # Number of checkpoints
+imgcount = 0                                                # Count of images
+enoughPointimgs = 0                                         # Number of images used
 
-CheckPoints = 54
-usedimgsNum = 0
-imgCount = 0
-enoughPointimgs = 0
+# List of booleans for images that are used and not used
+usedimgsNum = []
 
 # Til test af cornerbilleder set til true eller false:
 test = False
@@ -107,9 +109,15 @@ for n in range(len(checkerboard_Imgs)):
         print("Number of objects: ", len(Objects))
         ObjectsH = sorted(Objects, key=len, reverse=True)
 
+        # Corner list for all corner candidates
         CornerList = []
-        usedimgsNum[imgcount] = False
 
+        # Corner list for sorted and best corner candidates
+        CornerListSortedXY = []
+
+        usedimgsNum.append(False)
+
+        # If there is not enough coroner candidates found, then do not use the image or img points
         if len(ObjectsH) >= CheckPoints:
             usedimgsNum[imgcount] = True
             enoughPointimgs = enoughPointimgs + 1
@@ -131,28 +139,43 @@ for n in range(len(checkerboard_Imgs)):
 
                 CornerList.append([ybb, xbb])
 
+                columnIndex = 0
+
+                # Sort 2D numpy array by 1nd Column from high to low
+                CornerListX = sorted(CornerList, key=lambda x: x[0], reverse=True)
+
+                # Sort 2D numpy array by 2nd Column from high to low, but only for 6 at a time
+                for n in range(int(CheckPoints / checkerboard_size[1])):
+                    start = n * checkerboard_size[1]
+                    stop = n * checkerboard_size[1]
+                    nextRow = CornerListX[start:stop]
+                    CornerListSortedXY.append(sorted(nextRow, key=lambda x: x[1], reverse=True))
+
             if n == 0:
                 imgspoints = np.zeros([CheckPoints, 2, numImgs])
                 imgspoints[:, :, n] = CornerList
             else:
                 imgspoints[:, :, n] = CornerList
 
-                # Draw a circle around the center
-                cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
+            # Draw a circle around the center
+            cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
 
-        # Some images where not used because the corners where not found
-        # Therefore make a new array, where only all image points in the checkerboard where detected
-        ar = 0
-        for n in range(len(usedimgsNum)):
-            if n == 0 and usedimgsNum[n] == True:
-                imgspoints_print = np.zeros([CheckPoints, 2, enoughPointimgs])
-                imgspoints_print[:, :, n] = imgspoints[:, :, n]
-                ar = ar + 1
-            elif usedimgsNum[n] == True:
-                imgspoints_print[:, :, ar] = imgspoints[:, :, n]
-                ar = ar + 1
-            else:
-                print('Delete tha first image in checkerboard_pics or replace checkerboard images')
+    imgcount = imgcount + 1
+
+# Some images where not used because the corners where not found
+# Therefore make a new array, where only all image points in the checkerboard where detected
+print(usedimgsNum)
+ar = 0
+for n in range(len(usedimgsNum)):
+    if n == 0 and usedimgsNum[n] == True:
+        imgspoints_print = np.zeros([CheckPoints, 2, enoughPointimgs])
+        imgspoints_print[:, :, ar] = imgspoints[:, :, n]
+        ar = ar + 1
+    elif usedimgsNum[n] == True:
+        imgspoints_print[:, :, ar] = imgspoints[:, :, n]
+        ar = ar + 1
+    else:
+        print('Delete tha first image in checkerboard_pics or replace checkerboard images')
 
 scipy.io.savemat('imgPoints.mat', mdict={'imgspoints_print': imgspoints_print})
 
