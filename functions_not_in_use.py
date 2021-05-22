@@ -1,3 +1,4 @@
+import copy
 import glob
 import math
 import time
@@ -7,8 +8,6 @@ from random import randint
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import copy
-
 from skimage.exposure import match_histograms
 
 import extremeImageProcessing as eip
@@ -19,8 +18,8 @@ def GrassFire(img):
     mask = copy.copy(img)
 
     h, w = mask.shape[:2]
-    h = h-1
-    w = w-1
+    h = h - 1
+    w = w - 1
 
     save_array = []
     zero_array = []
@@ -34,7 +33,7 @@ def GrassFire(img):
             elif mask.item(y, x) == 0 and x >= w:
                 zero_array.append(mask.item(y, x))
 
-    # Looping if x == 1, and some pixels has to be burned
+            # Looping if x == 1, and some pixels has to be burned
             while mask.item(y, x) > 0 or len(save_array) > 0:
                 mask.itemset((y, x), 0)
                 temp_cord.append([y, x])
@@ -65,18 +64,20 @@ def GrassFire(img):
 
     return blob_array
 
+
 def doClaheLAB2(null):
     global val2, kernel
     val2 = cv2.getTrackbarPos('tilesize', 'ResultHLS')
     if val2 <= 1:
         val2 = 2
-    kernel = (val2,val2)
-    res = claheHSL(img, val1/10,kernel)
+    kernel = (val2, val2)
+    res = claheHSL(img, val1 / 10, kernel)
     cv2.imshow("ResultHLS", res)
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.show()
     cv2.waitKey(0)
+
 
 def harrisCorner(checkeboardImg, test=False, CornerCor=True):
     '''
@@ -224,16 +225,17 @@ def harrisCorner(checkeboardImg, test=False, CornerCor=True):
 
     return CornerCoordinate
 
+
 def normHistEqualizeHLS(img):
     fiskHLS1 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    LChannel = fiskHLS1[:,:,1]
+    LChannel = fiskHLS1[:, :, 1]
     HistEqualize = cv2.equalizeHist(LChannel)
-    fiskHLS1[:,:,1] = HistEqualize
-    fiskNomrHistEq = cv2.cvtColor(fiskHLS1,cv2.COLOR_HLS2BGR)
+    fiskHLS1[:, :, 1] = HistEqualize
+    fiskNomrHistEq = cv2.cvtColor(fiskHLS1, cv2.COLOR_HLS2BGR)
     return fiskNomrHistEq
 
 
-def claheHSL(img,clipLimit,tileGridSize):
+def claheHSL(img, clipLimit, tileGridSize):
     fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     LChannelHLS = fiskHLS2[:, :, 1]
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
@@ -243,7 +245,7 @@ def claheHSL(img,clipLimit,tileGridSize):
     return fiskClahe
 
 
-def claheLAB(img,clipLimit,tileGridSize):
+def claheLAB(img, clipLimit, tileGridSize):
     fiskLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     LChannelLAB = fiskLAB[:, :, 0]
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
@@ -277,7 +279,7 @@ def limitLchannel(img, limit):
 def doClaheLAB1(null):
     global val1
     val1 = cv2.getTrackbarPos('cliplimit', 'ResultHLS')
-    res = claheHSL(img, val1/10,kernel)
+    res = claheHSL(img, val1 / 10, kernel)
     cv2.imshow("ResultHLS", res)
     plt.hist(res.ravel(), 256, [0, 256]);
     plt.hist(res.ravel(), 256, [0, 256]);
@@ -293,13 +295,14 @@ def resizeImg(img, scale_percent):
     # resize image
     return resized
 
+
 def meanEdgeRGB(img):
     cv2.imshow('img', img)
     cv2.waitKey(0)
 
-    imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    ret,imgGrayBin = cv2.threshold(imgGray,0, 255,cv2.THRESH_BINARY)
+    ret, imgGrayBin = cv2.threshold(imgGray, 0, 255, cv2.THRESH_BINARY)
 
     kernel = np.ones((4, 4), np.uint8)
     erosionBefore = cv2.erode(imgGrayBin, kernel)
@@ -308,7 +311,7 @@ def meanEdgeRGB(img):
     erosion = cv2.erode(erosionBefore, kernel)
     outline = cv2.subtract(erosionBefore, erosion)
 
-    res = cv2.bitwise_and(img,img,mask = outline)
+    res = cv2.bitwise_and(img, img, mask=outline)
     cv2.imshow('res', res)
     cv2.waitKey(0)
 
@@ -326,35 +329,41 @@ def meanEdgeRGB(img):
 
     height, width, channel = res.shape
 
-    i = 0; bi = 0; bki = 0
-    u = 0; bu = 0; bku = 0
-    k = 0; bk = 0; bkk = 0
+    i = 0;
+    bi = 0;
+    bki = 0
+    u = 0;
+    bu = 0;
+    bku = 0
+    k = 0;
+    bk = 0;
+    bkk = 0
 
     for chan in range(channel):
         for y in range(height):
             for x in range(width):
-                if res.item(y,x,0) > 0:
-                    blue = blue + res.item(y,x,0)
+                if res.item(y, x, 0) > 0:
+                    blue = blue + res.item(y, x, 0)
                     i = i + 1
                     if y >= 130:
-                        bellyBlue = bellyBlue + res.item(y,x,0)
+                        bellyBlue = bellyBlue + res.item(y, x, 0)
                         bi = bi + 1
                     if y < 130:
                         backBlue = backBlue + res.item(y, x, 0)
                         bki = bki + 1
 
-                if res.item(y,x,1) > 0:
-                    green = green + res.item(y,x,1)
+                if res.item(y, x, 1) > 0:
+                    green = green + res.item(y, x, 1)
                     u = u + 1
                     if y >= 130:
-                        bellyGreen = bellyGreen + res.item(y,x,1)
+                        bellyGreen = bellyGreen + res.item(y, x, 1)
                         bu = bu + 1
                     if y < 130:
                         backGreen = backGreen + res.item(y, x, 1)
                         bku = bku + 1
 
-                if res.item(y,x,2) > 0:
-                    red = red + res.item(y,x,2)
+                if res.item(y, x, 2) > 0:
+                    red = red + res.item(y, x, 2)
                     k = k + 1
                     if y >= 130:
                         bellyRed = bellyRed + res.item(y, x, 2)
@@ -363,12 +372,12 @@ def meanEdgeRGB(img):
                         backRed = backRed + res.item(y, x, 2)
                         bkk = bkk + 1
 
-    meanBlue = blue/i
-    meanGreen = green/u
-    meanRed = red/k
+    meanBlue = blue / i
+    meanGreen = green / u
+    meanRed = red / k
 
-    print('mean blue: ',meanBlue)
-    print('mean green: ',meanGreen)
+    print('mean blue: ', meanBlue)
+    print('mean green: ', meanGreen)
     print(' ')
 
     meanBlueBelly = bellyBlue / bi
@@ -388,6 +397,7 @@ def meanEdgeRGB(img):
     print('mean green back: ', meanGreenBack)
     print('mean red back: ', meanRedBack)
 
+
 def SURFalignment(img1, img2):
     # SURFAlignment aligns two images. Based on https://www.youtube.com/watch?v=cA8K8dl-E6k&t=131s
     img1Gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
@@ -396,7 +406,7 @@ def SURFalignment(img1, img2):
 
     orb = cv2.ORB_create(50)
 
-    kp1, des1 = orb.detectAndCompute(img1Gray,None)
+    kp1, des1 = orb.detectAndCompute(img1Gray, None)
     kp2, des2 = orb.detectAndCompute(img2Gray, None)
 
     img1Kp = cv2.drawKeypoints(img1, kp1, None, flags=None)
@@ -408,9 +418,9 @@ def SURFalignment(img1, img2):
 
 
 def smallrange_isolate_img(hsv_img):
-
     def nothing(x):
         pass
+
     cv2.namedWindow("Adjust_Hue_Satuation_Value")
     cv2.createTrackbar("lowerH1", "Adjust_Hue_Satuation_Value", 0, 179, nothing)
     cv2.createTrackbar("lowerH2", "Adjust_Hue_Satuation_Value", 0, 179, nothing)
@@ -450,16 +460,16 @@ def smallrange_isolate_img(hsv_img):
 
         if key == 27:
             break
-        #plt.imshow(segmentedImg, cmap="gray")
-        #plt.show()
+        # plt.imshow(segmentedImg, cmap="gray")
+        # plt.show()
 
 
 def isolate_img(resized_input_image, hsv_image):
-
-    #hsv_image = cv2.cvtColor(resized_input_image, cv2.COLOR_BGR2HSV)
+    # hsv_image = cv2.cvtColor(resized_input_image, cv2.COLOR_BGR2HSV)
 
     def nothing(x):
         pass
+
     cv2.namedWindow("Adjust_Hue_Satuation_Value")
     cv2.createTrackbar("lowerH", "Adjust_Hue_Satuation_Value", 0, 179, nothing)
     cv2.createTrackbar("lowerS", "Adjust_Hue_Satuation_Value", 0, 255, nothing)
@@ -507,7 +517,6 @@ def isolate_img(resized_input_image, hsv_image):
 
 
 def creating_mask_input_hsv(img, hsv_image):
-
     def nothing(x):
         pass
 
@@ -544,22 +553,21 @@ def creating_mask_input_hsv(img, hsv_image):
 
 
 def canny_edge_detection(img, mask):
-
     def nothing(x):
         pass
 
     cv2.namedWindow("Canny_detection")
     cv2.createTrackbar("c1", "Canny_detection", 0, 200, nothing)
     cv2.createTrackbar("c2", "Canny_detection", 0, 500, nothing)
-    #cv2.createTrackbar("kernel1", "Canny_detection", 0, 50, nothing)
-    #cv2.createTrackbar("kernel2", "Canny_detection", 0, 50, nothing)
+    # cv2.createTrackbar("kernel1", "Canny_detection", 0, 50, nothing)
+    # cv2.createTrackbar("kernel2", "Canny_detection", 0, 50, nothing)
 
     while True:
 
         c1 = cv2.getTrackbarPos("c1", "Canny_detection")
         c2 = cv2.getTrackbarPos("c2", "Canny_detection")
-        #k1 = cv2.getTrackbarPos("kernel1", "Canny_detection")
-        #k2 = cv2.getTrackbarPos("kernel2", "Canny_detection")
+        # k1 = cv2.getTrackbarPos("kernel1", "Canny_detection")
+        # k2 = cv2.getTrackbarPos("kernel2", "Canny_detection")
 
         edges = cv2.Canny(mask, c1, c2)
 
@@ -569,7 +577,6 @@ def canny_edge_detection(img, mask):
 
         kernel1 = np.ones((5, 5), np.uint8)
         kernel2 = np.ones((3, 3), np.uint8)
-
 
         open1 = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel1)
         close1 = cv2.morphologyEx(open1, cv2.MORPH_OPEN, kernel2)
@@ -588,12 +595,10 @@ def canny_edge_detection(img, mask):
         if key == 27:
             break
 
-
     return res
 
 
 def grayScaling(img):
-
     width, height = img.shape[:2]
 
     new_img = np.zeros([width, height, 3])
@@ -601,7 +606,7 @@ def grayScaling(img):
     for i in range(width):
         for j in range(height):
             list = [float(img[i][j][0]), float(img[i][j][1]), float(img[i][j][2])]
-            avg = float(((list[0]+list[1]+list[2])/3)/255)
+            avg = float(((list[0] + list[1] + list[2]) / 3) / 255)
             new_img[i][j][0] = avg
             new_img[i][j][1] = avg
             new_img[i][j][2] = avg
@@ -630,69 +635,67 @@ def grayScaling8bit(img):
 
 
 def convert_RGB_to_HSV(img):
-
     width, height, channel = img.shape
 
-    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
+    B, G, R = img[:, :, 0] / 255, img[:, :, 1] / 255, img[:, :, 2] / 255
 
     hsv_img = np.zeros(img.shape, dtype=np.uint8)
 
     for i in range(width):
         for j in range(height):
 
-        # Defining Hue
+            # Defining Hue
             h, s, v = 0.0, 0.0, 0.0
             r, g, b = R[i][j], G[i][j], B[i][j]
 
             max_rgb, min_rgb = max(r, g, b), min(r, g, b)
-            dif_rgb = (max_rgb-min_rgb)
+            dif_rgb = (max_rgb - min_rgb)
 
             if r == g == b:
                 h = 0
             elif max_rgb == r:
-                h = ((60*(g-b))/dif_rgb)
+                h = ((60 * (g - b)) / dif_rgb)
             elif max_rgb == g:
-                h = (((60*(b-r))/dif_rgb)+120)
+                h = (((60 * (b - r)) / dif_rgb) + 120)
             elif max_rgb == b:
-                h = (((60*(r-g))/dif_rgb)+240)
+                h = (((60 * (r - g)) / dif_rgb) + 240)
             if h < 0:
-                h = h+360
+                h = h + 360
 
-        # Defining Satuation
+            # Defining Satuation
             if max_rgb == 0:
                 s = 0
             else:
-                s = ((max_rgb-min_rgb)/max_rgb)
-        # Defining Value
+                s = ((max_rgb - min_rgb) / max_rgb)
+            # Defining Value
 
             v = max_rgb
-            #print(h, s, v)
-            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s*255, v*255
+            # print(h, s, v)
+            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h / 2, s * 255, v * 255
 
     return hsv_img
 
 
-def erosion (img):
-
+def erosion(img):
     k1 = 5
     k2 = 5
-    c1 = (k1-1)
-    c2 = (k2-1)
+    c1 = (k1 - 1)
+    c2 = (k2 - 1)
 
     width, height = img.shape
 
-    #structuring_element = np.array([[1, 1, 1],
-                                    #[1, 1, 1],
-                                    #[1, 1, 1]])
+    # structuring_element = np.array([[1, 1, 1],
+    # [1, 1, 1],
+    # [1, 1, 1]])
 
     imgErode = np.zeros((width, height), dtype=img.dtype)
 
     kernel = np.ones(k1, k2)
 
-    for i in range(c1, width-c1):
-        for j in range(c2, height-c2):
-            temp = img[i-c1:i+c1+1][j-c2:j+c2+1]
-            product = temp*kernel
+    for i in range(c1, width - c1):
+        for j in range(c2, height - c2):
+            temp = img[i - c1:i + c1 + 1][j - c2:j + c2 + 1]
+            product = temp * kernel
             imgErode[i][j] = np.min(product)
 
     cv2.imshow("erodeIMG", imgErode)
@@ -704,7 +707,7 @@ def grassfire_transform(mask, img):
     """
     Apply the grassfire transform to a binary mask array.
     """
-    #imgGray = grayScaling8bit(img)
+    # imgGray = grayScaling8bit(img)
 
     h, w = mask.shape
     # Use uint32 to avoid overflow
@@ -714,7 +717,7 @@ def grassfire_transform(mask, img):
     # Left to right, top to bottom
     for x in range(w):
         for y in range(h):
-            if mask[y, x] != 0: # Pixel in contour
+            if mask[y, x] != 0:  # Pixel in contour
                 north = 0 if y == 0 else grassfire[y - 1, x]
                 west = 0 if x == 0 else grassfire[y, x - 1]
                 if x == 3 and y == 3:
@@ -725,11 +728,11 @@ def grassfire_transform(mask, img):
     # Right to left, bottom to top
     for x in range(w - 1, -1, -1):
         for y in range(h - 1, -1, -1):
-            if mask[y, x] != 0: # Pixel in contour
+            if mask[y, x] != 0:  # Pixel in contour
                 south = 0 if y == (h - 1) else grassfire[y + 1, x]
                 east = 0 if x == (w - 1) else grassfire[y, x + 1]
                 grassfire[y, x] = min(grassfire[y, x],
-                    1 + min(south, east))
+                                      1 + min(south, east))
 
     cv2.imshow("grasfire", grassfire)
     cv2.waitKey(0)
@@ -737,7 +740,6 @@ def grassfire_transform(mask, img):
 
 
 def grasfire_algorithm(mask):
-
     h, w = mask.shape[:2]
     h = h - 1
     w = w - 1
@@ -747,12 +749,12 @@ def grasfire_algorithm(mask):
     pop_array = []
     for y in range(h):
         for x in range(w):
-            #x = x + 1
-            #y = y + 1
-            #try:
-                #print(mask[y, x])
-            #except:
-                #print(y, x)
+            # x = x + 1
+            # y = y + 1
+            # try:
+            # print(mask[y, x])
+            # except:
+            # print(y, x)
             if mask[y][x] == 0 and x <= h:
                 zero_array.append([y, x])
                 zero_array.append(mask[y][x])
@@ -760,7 +762,7 @@ def grasfire_algorithm(mask):
                 zero_array.append([y, x])
                 zero_array.append(mask[y][x])
 
-# Looping if x == 1, and some pixels has to be burned
+            # Looping if x == 1, and some pixels has to be burned
             while mask[y][x] == 255:
                 save_array.append([y, x])
                 if mask[y][x + 1] == 255:
@@ -784,9 +786,6 @@ def grasfire_algorithm(mask):
                 y, x = save_array.pop()
                 print("yx", y, x)
 
-
-
-
     print("savearray", save_array)
     print("zeroarray", zero_array)
     cv2.imshow("grasfire", grassfire)
@@ -797,8 +796,8 @@ def grasfire_algorithm(mask):
 
 def grassfire_v2(mask):
     h, w = mask.shape[:2]
-    h = h-1
-    w = w-1
+    h = h - 1
+    w = w - 1
     grassfire = np.zeros_like(mask, dtype=np.uint8)
     save_array = []
     zero_array = []
@@ -812,7 +811,7 @@ def grassfire_v2(mask):
             elif mask[y][x] == 0 and x >= w:
                 zero_array.append(mask[y][x])
 
-    # Looping if x == 1, and some pixels has to be burned
+            # Looping if x == 1, and some pixels has to be burned
             while mask[y][x] > 0 or len(save_array) > 0:
                 mask[y][x] = 0
                 temp_cord.append([y, x])
@@ -828,19 +827,19 @@ def grassfire_v2(mask):
                 if mask[y][x + 1] > 0:
                     if [y, x + 1] not in save_array:
                         save_array.append([y, x + 1])
-                if len(save_array)>0:
-                    y,x = save_array.pop()
+                if len(save_array) > 0:
+                    y, x = save_array.pop()
 
                 else:
                     print("Burn is done")
                     blob_array.append(temp_cord)
                     temp_cord = []
                     break
-    maskColor = np.zeros((h,w, 3), np.uint8)
+    maskColor = np.zeros((h, w, 3), np.uint8)
     for blob in range(len(blob_array)):
         B, G, R = randint(0, 255), randint(0, 255), randint(0, 255)
         for cord in blob_array[blob]:
-            y,x = cord
+            y, x = cord
             maskColor[y][x][0] = B
             maskColor[y][x][1] = G
             maskColor[y][x][2] = R
@@ -972,11 +971,11 @@ def cropToROI(orig_img, contours):
         # Computing the approximate center of mass:
         # From Thomas B. Moeslund "Introduction to Video and Image Processing"
         # (Page 109 Eq: 7.3 and 7.4)
-        xcm.append(int((xmin+xmax)/2))
-        ycm.append(int((ymin+ymax)/2))
-        #crop_img.append(orig_img[nr][ymin-50:ymax+50, xmin-50:xmax+50])
-        #rsize = 6
-        #crop_img[nr] = cv2.resize(crop_img[nr], (rsize, rsize))
+        xcm.append(int((xmin + xmax) / 2))
+        ycm.append(int((ymin + ymax) / 2))
+        # crop_img.append(orig_img[nr][ymin-50:ymax+50, xmin-50:xmax+50])
+        # rsize = 6
+        # crop_img[nr] = cv2.resize(crop_img[nr], (rsize, rsize))
     return xcm, ycm
 
 
@@ -1099,7 +1098,7 @@ def rotateImages(img, rotate_img, xcm, ycm, contours):
             y_delta = contours[nr][point][0][1] - ycm[nr]
             # Compute the length and angle of each coordinate in the contours.
             data[nr]["length"].append(math.sqrt(pow(x_delta, 2) + pow(y_delta, 2)))
-            data[nr]["angle"].append(math.atan2(y_delta, x_delta)*(180/math.pi))
+            data[nr]["angle"].append(math.atan2(y_delta, x_delta) * (180 / math.pi))
             # Finding the longest length and at what angle.
             if data[nr]["length"][point] > maxLength:
                 maxLength = data[nr]["length"][point]
@@ -1208,7 +1207,7 @@ def checkerboard_calibrate(images_distort, images_checkerboard):
         return images_distort
 
 
-def showCompariHist(img1,img2, stringImg1, stringImg2, mode):
+def showCompariHist(img1, img2, stringImg1, stringImg2, mode):
     '''
     Compares histogram of R+B+G histogram
 
@@ -1252,13 +1251,12 @@ def showCompariHist(img1,img2, stringImg1, stringImg2, mode):
             sum2 = sum2 + (i * img2histr[i])
 
         # Normalize histograms
-        img1histrNorm = (img1histr / (h1 * w1))*100
-        img2histrNorm = (img2histr / (h2 * w2))*100
+        img1histrNorm = (img1histr / (h1 * w1)) * 100
+        img2histrNorm = (img2histr / (h2 * w2)) * 100
         print(sum(img1histrNorm), sum(img2histrNorm))
         plt.plot(img1histrNorm, color='orange'), plt.plot(img2histrNorm, color='blue')
-        print("mean value for img1 = ", sum1/(h1 * w1))
-        print("mean value for img2 = ", sum2/(h2 * w2))
-
+        print("mean value for img1 = ", sum1 / (h1 * w1))
+        print("mean value for img2 = ", sum2 / (h2 * w2))
 
     # Show histograms
     plt.xlim([0, 256])
@@ -1278,7 +1276,6 @@ def calcHueChanHist(imageChannel):
 
     histSize = 0
     imgHistogram = (cv2.calcHist([imageChannel], [0], None, [180], [0, 180]))
-
 
     h1, w1 = imageChannel.shape
 
@@ -1300,21 +1297,21 @@ def calcMeanHist(images):
     :return:
     '''
     if len(images) == 0:
-        return 0,0
+        return 0, 0
 
     sum = 0
     histSize = 256
     imgHistograms = []
     imgMeanHistograms = []
     for img in images:
-            n_img = cv2.imread(img)
-            grey_img = BGR2MeanGreyscale(n_img)
-            #B, G, R = cv2.split(n_img)
-            imgHistograms.append(cv2.calcHist([grey_img], [0], None, [histSize], [0, histSize]))
+        n_img = cv2.imread(img)
+        grey_img = BGR2MeanGreyscale(n_img)
+        # B, G, R = cv2.split(n_img)
+        imgHistograms.append(cv2.calcHist([grey_img], [0], None, [histSize], [0, histSize]))
     for i in range(histSize):
         for histo in imgHistograms:
             sum = sum + histo[i]
-        mean = sum/len(images)
+        mean = sum / len(images)
         sum = 0
         imgMeanHistograms.append(mean)
     imgMeanHistograms = np.array(imgMeanHistograms)
@@ -1325,9 +1322,9 @@ def calcMeanHist(images):
         sum1 = sum1 + (i * imgMeanHistograms[i])
 
     # Normalize histograms
-    img1histrNorm = (imgMeanHistograms / (h1 * w1))*100
+    img1histrNorm = (imgMeanHistograms / (h1 * w1)) * 100
     plt.plot(img1histrNorm, color='orange')
-    mean_value = sum1/(h1 * w1)
+    mean_value = sum1 / (h1 * w1)
 
     return img1histrNorm, mean_value
 
@@ -1346,10 +1343,9 @@ def BGR2MeanGreyscale(img):
 
     for y in range(h):
         for x in range(w):
-            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2))/3
+            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2)) / 3
             greyscale_img1.itemset((y, x), I1)
-    print("Execution time for optimized item/itemset function: ","--- %s seconds ---" % (time.time() - start_time))
-
+    print("Execution time for optimized item/itemset function: ", "--- %s seconds ---" % (time.time() - start_time))
 
     """for y in range(h):
         for x in range(w):
@@ -1360,7 +1356,6 @@ def BGR2MeanGreyscale(img):
 
 
 def imgMinusimg(img1, img2):
-
     h, w = img1.shape[:2]
     greyscale_img1 = np.zeros((h, w, 1), np.uint8)
     for y in range(h):
@@ -1425,32 +1420,33 @@ def undistortImg(distortedImg, recalibrate=False):
 
     if recalibrate == True:
         print('Calibrating camera please wait ... \n')
-        CHECKERBOARD = (6,9) # size of checkerboard
+        CHECKERBOARD = (6, 9)  # size of checkerboard
 
-        subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
-        calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
-        objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
-        objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+        subpix_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+        calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC + cv2.fisheye.CALIB_CHECK_COND + cv2.fisheye.CALIB_FIX_SKEW
+        objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+        objp[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
         _img_shape = None
-        objpoints = [] # 3d point in real world space
-        imgpoints = [] # 2d points in image plane.
+        objpoints = []  # 3d point in real world space
+        imgpoints = []  # 2d points in image plane.
 
-        images = glob.glob('calibration/checkerboard_pics/*.JPG') #loaded images from folder in work tree
-        #Run through list of images of checkerboards
+        images = glob.glob('calibration/checkerboard_pics/*.JPG')  # loaded images from folder in work tree
+        # Run through list of images of checkerboards
         for fname in images:
             img = cv2.imread(fname)
             if _img_shape == None:
                 _img_shape = img.shape[:2]
             else:
-                assert _img_shape == img.shape[:2] #All images must share the same size
-            gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+                assert _img_shape == img.shape[:2]  # All images must share the same size
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # Find the chess board corners
-            ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
+            ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD,
+                                                     cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
             # If found, add object points, image points (after refining them)
             if ret == True:
                 objpoints.append(objp)
-                cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),subpix_criteria)
+                cv2.cornerSubPix(gray, corners, (3, 3), (-1, -1), subpix_criteria)
                 imgpoints.append(corners)
         N_OK = len(objpoints)
         K = np.zeros((3, 3))
@@ -1469,7 +1465,7 @@ def undistortImg(distortedImg, recalibrate=False):
                 rvecs,
                 tvecs,
                 calibration_flags,
-                (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
+                (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
             )
 
         # Save calibration session parametres
@@ -1502,13 +1498,13 @@ def undistortImg(distortedImg, recalibrate=False):
     scaled_K[2][2] = 1.0
 
     new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D,
-        img_dim, np.eye(3), balance=balance)
+                                                                   img_dim, np.eye(3), balance=balance)
 
     print('\n Undistorting image ... ')
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3),
-        new_K, img_dim, cv2.CV_16SC2)
+                                                     new_K, img_dim, cv2.CV_16SC2)
     undist_image = cv2.remap(distortedImg, map1, map2, interpolation=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT)
+                             borderMode=cv2.BORDER_CONSTANT)
 
     print('\n Image has been undistorted')
 
@@ -1516,14 +1512,14 @@ def undistortImg(distortedImg, recalibrate=False):
 
 
 def save_img(img):
-    out_folder_processed_images_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"    # Make into Yaml parameter path
+    out_folder_processed_images_path = "C:\\Users\\MOCst\\PycharmProjects\\Nye_filer"  # Make into Yaml parameter path
     count = 0
     if len(img) < 1:
         for n in img:
-            count = count+1
-            cv2.imwrite(out_folder_processed_images_path+f"\\fish{count}.jpg", n)
+            count = count + 1
+            cv2.imwrite(out_folder_processed_images_path + f"\\fish{count}.jpg", n)
     else:
-        cv2.imwrite(out_folder_processed_images_path+"\\fish.jpg", img)
+        cv2.imwrite(out_folder_processed_images_path + "\\fish.jpg", img)
 
 
 def replaceHighlights2(main_img, spec_img, limit):
@@ -1650,8 +1646,8 @@ def contour_MOC(orig_img, contours):
         # Computing the approximate center of mass:
         # From Thomas B. Moeslund "Introduction to Video and Image Processing"
         # (Page 109 Eq: 7.3 and 7.4)
-        xcm.append(int((xmin+xmax)/2))
-        ycm.append(int((ymin+ymax)/2))
+        xcm.append(int((xmin + xmax) / 2))
+        ycm.append(int((ymin + ymax) / 2))
 
     print("Found all the contours and cropped the image!")
 
@@ -1813,7 +1809,7 @@ def rotateImages2(rotate_img, xcm, ycm, contours):
             y_delta = contours[nr][point][0][1] - ycm[nr]
             # Compute the length and angle of each coordinate in the contours.
             data[nr]["length"].append(math.sqrt(pow(x_delta, 2) + pow(y_delta, 2)))
-            data[nr]["angle"].append(math.atan2(y_delta, x_delta)*(180/math.pi))
+            data[nr]["angle"].append(math.atan2(y_delta, x_delta) * (180 / math.pi))
             # Finding the longest length and at what angle.
             if data[nr]["length"][point] > maxLength:
                 maxLength = data[nr]["length"][point]
@@ -1885,7 +1881,6 @@ def isolate_img2(resized_input_image):
 
 
 def segment_cod2(images, cahe_clipSize, titleSize, show_images=False):
-
     print("Started segmenting the cods!")
 
     inRangeImages = []

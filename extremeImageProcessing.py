@@ -1,11 +1,10 @@
-import os
-
-import numpy as np
-import cv2
-import warnings
 import glob
-
+import os
+import warnings
 from random import randint
+
+import cv2
+import numpy as np
 
 
 def bitwise_and(img, mask):
@@ -193,7 +192,7 @@ def grayScaling(img):
     # Go through each pixel in the image and record the intensity, then safe it for the same pixel in the image copy
     for y in range(h):
         for x in range(w):
-            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2))/3
+            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2)) / 3
             greyscale_img1.itemset((y, x, 0), I1)
     return greyscale_img1
 
@@ -208,7 +207,7 @@ def convert_RGB_to_HSV(img):
 
     width, height, channel = img.shape
 
-    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
+    B, G, R = img[:, :, 0] / 255, img[:, :, 1] / 255, img[:, :, 2] / 255
 
     hsv_img = np.zeros(img.shape, dtype=np.uint8)
 
@@ -220,27 +219,27 @@ def convert_RGB_to_HSV(img):
             r, g, b = R[i][j], G[i][j], B[i][j]
 
             max_rgb, min_rgb = max(r, g, b), min(r, g, b)
-            dif_rgb = (max_rgb-min_rgb)
+            dif_rgb = (max_rgb - min_rgb)
 
             if r == g == b:
                 h = 0
             elif max_rgb == r:
-                h = ((60*(g-b))/dif_rgb)
+                h = ((60 * (g - b)) / dif_rgb)
             elif max_rgb == g:
-                h = (((60*(b-r))/dif_rgb)+120)
+                h = (((60 * (b - r)) / dif_rgb) + 120)
             elif max_rgb == b:
-                h = (((60*(r-g))/dif_rgb)+240)
+                h = (((60 * (r - g)) / dif_rgb) + 240)
             if h < 0:
-                h = h+360
+                h = h + 360
 
             # Defining Saturation
             if max_rgb == 0:
                 s = 0
             else:
-                s = ((max_rgb-min_rgb)/max_rgb)
+                s = ((max_rgb - min_rgb) / max_rgb)
 
             # Defining Value
-            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
+            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h / 2, s * 255, s * 255
 
     return hsv_img
 
@@ -255,32 +254,33 @@ def undistortImg(distortedImg, recalibrate=False):
 
     if recalibrate == True:
         print('Calibrating camera please wait ... \n')
-        CHECKERBOARD = (6,9) # size of checkerboard
+        CHECKERBOARD = (6, 9)  # size of checkerboard
 
-        subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
-        calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
-        objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
-        objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+        subpix_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+        calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC + cv2.fisheye.CALIB_CHECK_COND + cv2.fisheye.CALIB_FIX_SKEW
+        objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+        objp[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
         _img_shape = None
-        objpoints = [] # 3d point in real world space
-        imgpoints = [] # 2d points in image plane.
+        objpoints = []  # 3d point in real world space
+        imgpoints = []  # 2d points in image plane.
 
-        images = glob.glob('calibration/checkerboard_pics/*.JPG') #loaded images from folder in work tree
-        #Run through list of images of checkerboards
+        images = glob.glob('calibration/checkerboard_pics/*.JPG')  # loaded images from folder in work tree
+        # Run through list of images of checkerboards
         for fname in images:
             img = cv2.imread(fname)
             if _img_shape == None:
                 _img_shape = img.shape[:2]
             else:
-                assert _img_shape == img.shape[:2] #All images must share the same size
-            gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+                assert _img_shape == img.shape[:2]  # All images must share the same size
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # Find the chess board corners
-            ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
+            ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD,
+                                                     cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
             # If found, add object points, image points (after refining them)
             if ret == True:
                 objpoints.append(objp)
-                cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),subpix_criteria)
+                cv2.cornerSubPix(gray, corners, (3, 3), (-1, -1), subpix_criteria)
                 imgpoints.append(corners)
         N_OK = len(objpoints)
         K = np.zeros((3, 3))
@@ -299,7 +299,7 @@ def undistortImg(distortedImg, recalibrate=False):
                 rvecs,
                 tvecs,
                 calibration_flags,
-                (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
+                (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
             )
 
         # Save calibration session parametres
@@ -332,13 +332,13 @@ def undistortImg(distortedImg, recalibrate=False):
     scaled_K[2][2] = 1.0
 
     new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D,
-        img_dim, np.eye(3), balance=balance)
+                                                                   img_dim, np.eye(3), balance=balance)
 
     print('\n Undistorting image ... ')
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3),
-        new_K, img_dim, cv2.CV_16SC2)
+                                                     new_K, img_dim, cv2.CV_16SC2)
     undist_image = cv2.remap(distortedImg, map1, map2, interpolation=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT)
+                             borderMode=cv2.BORDER_CONSTANT)
 
     print('\n Image has been undistorted')
 
@@ -347,8 +347,8 @@ def undistortImg(distortedImg, recalibrate=False):
 
 def grassfire_v2(mask):
     h, w = mask.shape[:2]
-    h = h-1
-    w = w-1
+    h = h - 1
+    w = w - 1
     grassfire = np.zeros_like(mask, dtype=np.uint8)
     save_array = []
     zero_array = []
@@ -362,7 +362,7 @@ def grassfire_v2(mask):
             elif mask[y][x] == 0 and x >= w:
                 zero_array.append(mask[y][x])
 
-    # Looping if x == 1, and some pixels has to be burned
+            # Looping if x == 1, and some pixels has to be burned
             while mask[y][x] > 0 or len(save_array) > 0:
                 mask[y][x] = 0
                 temp_cord.append([y, x])
@@ -378,15 +378,15 @@ def grassfire_v2(mask):
                 if mask[y][x + 1] > 0:
                     if [y, x + 1] not in save_array:
                         save_array.append([y, x + 1])
-                if len(save_array)>0:
-                    y,x = save_array.pop()
+                if len(save_array) > 0:
+                    y, x = save_array.pop()
 
                 else:
                     print("Burn is done")
                     blob_array.append(temp_cord)
                     temp_cord = []
                     break
-    maskColor = np.zeros((h,w, 3), np.uint8)
+    maskColor = np.zeros((h, w, 3), np.uint8)
     for blob in range(len(blob_array)):
         B, G, R = randint(0, 255), randint(0, 255), randint(0, 255)
         for cord in blob_array[blob]:
@@ -400,8 +400,7 @@ def grassfire_v2(mask):
     return 0
 
 
-def saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage):
-
+def saveCDI(img_list_fish, percSpotCoverage):
     f = open("CDI.txt", "w+")
 
     line = ("-----------------------------------------------------------------\n")
@@ -416,14 +415,14 @@ def saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage):
     for i in range(len(img_list_fish)):
         name = os.path.splitext(img_list_fish[i])[0]
 
-        if boolean_bloodspot[i]:
+        if percSpotCoverage[i] > 0:
             f.write(line)
-            f.write("%s \t\t\t|x, coverage = " %name)
-            f.write("%.3f" %percSpotCoverage[i])
+            f.write("%s \t\t\t|x, coverage = " % name)
+            f.write("%.3f" % percSpotCoverage[i])
             f.write("%\n")
-        elif boolean_bloodspot[i] == False:
+        elif percSpotCoverage[i] == 0:
             f.write(line)
-            f.write("%s \t\t\t| \n" %name)
+            f.write("%s \t\t\t| \n" % name)
 
     f.write(line)
     f.close()

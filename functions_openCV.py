@@ -77,7 +77,6 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
     print("\nDistortion coefficients =")
     print(dist, "\n")
 
-
     # Go through all the images and undistort them
     img_undst = []
     for n in images_distort:
@@ -102,11 +101,17 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
 
 
 def detect_bloodspotsOPENCV(imgs, maskCod):
+    '''
+    Detect bloodspots, mark and tag them and find the coverage of bloodspots on hte cod
 
+    :param imgs: Images with cod
+    :param maskCod: The mask showing only the cod area
+    :return: mask of blood spots, segmented blood spots, marked and tagged blood spots, coverage of blood spots on the
+    cod
+    '''
     mask_bloodspots = []
     segmented_blodspots_imgs = []
     marked_bloodspots_imgs = []
-    booleans_bloodspot = []         # List of boolean values for each image classification
     percSpotCoverage = []
     count = 0
 
@@ -122,7 +127,6 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
 
         fishArea = biggestarea
 
-        bloodspot = False
         spotcount = 0
 
         marked_bloodspots_imgs.append(copy.copy(n))
@@ -137,7 +141,6 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
         kernelClose = np.ones((30, 30), np.uint8)
 
         # Perform morphology
-        #open = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
         close = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_CLOSE, kernelClose)
 
         # Perform bitwise operation to show bloodspots instead of BLOBS
@@ -154,31 +157,25 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
             if area > 50:
                 x, y, w, h = cv2.boundingRect(cont)
                 # Create tag
-                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
+                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255),
+                            3)
                 # Draw green contour
-                cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
-                #cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
+                cv2.rectangle(marked_bloodspots_imgs[count], (x - 5, y - 5), (x + w + 5, y + h + 5), (0, 255, 0), 2);
 
                 # Because the biologists have put a red tag on the cod, there will always be detected at least 1 blood
                 # spot
                 spotcount = spotcount + 1
                 if spotcount > 1:
-                    bloodspot = True
+                    totalSpotArea = totalSpotArea + area
 
-                totalSpotArea = totalSpotArea + area
-
-
-        percSpotCoverage.append(totalSpotArea/fishArea*100)
+        percSpotCoverage.append(totalSpotArea / fishArea * 100)
 
         count = count + 1
 
-        booleans_bloodspot.append(bloodspot)
-
-    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot, percSpotCoverage
+    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, percSpotCoverage
 
 
 def segment_codOPENCV(images, show_images=False):
-
     print("Started segmenting the cod!")
 
     inRangeImages = []
@@ -195,8 +192,8 @@ def segment_codOPENCV(images, show_images=False):
         mask = (255 - mask)
 
         # Create kernels for morphology
-        #kernelOpen = np.ones((4, 4), np.uint8)
-        #kernelClose = np.ones((7, 7), np.uint8)
+        # kernelOpen = np.ones((4, 4), np.uint8)
+        # kernelClose = np.ones((7, 7), np.uint8)
 
         kernelOpen = np.ones((9, 9), np.uint8)
         kernelClose = np.ones((20, 20), np.uint8)

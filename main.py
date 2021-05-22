@@ -4,7 +4,6 @@ import cv2
 
 # Imports of functions where own built functions have been used:
 from extremeImageProcessing import saveCDI
-
 # Imports of functions where openCV functions have been used:
 from functions_openCV import checkerboard_calibrateOPENCV, detect_bloodspotsOPENCV, segment_codOPENCV, showSteps, \
     save_imgOPENCV, crop, loadImages
@@ -22,7 +21,6 @@ showFish = 0
 
 # Run program using openCV functions
 if openCV:
-
     stepsList = []
 
     # Start timer for algorithm
@@ -43,7 +41,7 @@ if openCV:
 
     # Calibrate camera and undistort images
     fish_cali = checkerboard_calibrateOPENCV(checkerboard_dimensions, images, img_cali,
-                                                         show_img=False, recalibrate=False)
+                                             show_img=False, recalibrate=False)
     stepsList.append(fish_cali[showFish])
 
     # Crop to ROI
@@ -56,7 +54,7 @@ if openCV:
     stepsList.append(img_segmented_cod[showFish])
 
     # Blood spot detection
-    mask_bloodspots, bloodspots, marked_bloodspots, boolean_bloodspot, \
+    mask_bloodspots, bloodspots, marked_bloodspots, \
     percSpotCoverage = detect_bloodspotsOPENCV(img_segmented_cod, mask_cod)
     stepsList.append(bloodspots[showFish])
     stepsList.append(marked_bloodspots[showFish])
@@ -65,11 +63,11 @@ if openCV:
     save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images', img_list_fish)
 
     # Save a .txt file with CDI (catch damage index)
-    saveCDI(img_list_fish, boolean_bloodspot, percSpotCoverage)
+    saveCDI(img_list_fish, percSpotCoverage)
 
     # Check how long it took for algorithm to finish
     end_time = time.time()
-    print('Total time for algoritm: ', end_time-start_time, 'sec')
+    print('Total time for algoritm: ', end_time - start_time, 'sec')
 
     # Create subplots of main steps
     showSteps(stepsList)
