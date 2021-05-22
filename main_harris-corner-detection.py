@@ -1,15 +1,14 @@
-import cv2 as cv
-import numpy as np
-from matplotlib import pyplot as plt
-
 import GrassFire as gf
 import blur as bl
-import scipy.io
-import os
+import cv2 as cv
 import glob
+import numpy as np
+import os
+import scipy.io
+from matplotlib import pyplot as plt
 
-img_dir = "checkerboard_pics" # Enter Directory of all images
-data_path = os.path.join(img_dir,'*JPG')
+img_dir = "checkerboard_pics"  # Enter Directory of all images
+data_path = os.path.join(img_dir, '*JPG')
 files = glob.glob(data_path)
 filename_Imgs = []
 checkerboard_Imgs = []
@@ -24,12 +23,12 @@ print("Brew a cup of coffee or something, this is going to take some time")
 
 # Parameters
 windowSize = 3
-k = 0.04                                                    # Parameter between 0.04 - 0.06
-threshold = 10                                              # Threshold for R value representing corner response value
-checkerboard_size = [9,6]
-CheckPoints = checkerboard_size[0] * checkerboard_size[1]   # Number of checkpoints
-imgcount = 0                                                # Count of images
-enoughPointimgs = 0                                         # Number of images used
+k = 0.04  # Parameter between 0.04 - 0.06
+threshold = 10  # Threshold for R value representing corner response value
+checkerboard_size = [9, 6]
+CheckPoints = checkerboard_size[0] * checkerboard_size[1]  # Number of checkpoints
+imgcount = 0  # Count of images
+enoughPointimgs = 0  # Number of images used
 
 # List of booleans for images that are used and not used
 usedimgsNum = []
@@ -40,10 +39,13 @@ test = False
 CornerCor = True
 
 for n in range(len(checkerboard_Imgs)):
+    if n == 0:
+        imgspoints = np.zeros([CheckPoints, 2, numImgs])
+
     filename = filename_Imgs[n]
     img = checkerboard_Imgs[n]
 
-    offset = int(windowSize/2)
+    offset = int(windowSize / 2)
 
     x_size = filename.shape[1] - offset
     y_size = filename.shape[0] - offset
@@ -57,9 +59,9 @@ for n in range(len(checkerboard_Imgs)):
     Iy, Ix = np.gradient(blur)
 
     # Repræsentation af M matricen
-    Ixx = Ix**2
-    Ixy = Iy*Ix
-    Iyy = Iy**2
+    Ixx = Ix ** 2
+    Ixy = Iy * Ix
+    Iyy = Iy ** 2
 
     CornerCoordinate = []
     # Fra offset til y_size og offset til x_size
@@ -75,9 +77,9 @@ for n in range(len(checkerboard_Imgs)):
             end_y = y + offset + 1
 
             # Laver det window den køre med
-            windowIxx = Ixx[start_y : end_y, start_x : end_x]
-            windowIxy = Ixy[start_y : end_y, start_x : end_x]
-            windowIyy = Iyy[start_y : end_y, start_x : end_x]
+            windowIxx = Ixx[start_y: end_y, start_x: end_x]
+            windowIxy = Ixy[start_y: end_y, start_x: end_x]
+            windowIyy = Iyy[start_y: end_y, start_x: end_x]
 
             # Summed af det enkelte window
             Sxx = windowIxx.sum()
@@ -85,14 +87,14 @@ for n in range(len(checkerboard_Imgs)):
             Syy = windowIyy.sum()
 
             # Beregner determinanten og dirgonalen(tracen) for mere info --> se Jacobian formula
-            det = (Sxx * Syy) - (Sxy**2)
+            det = (Sxx * Syy) - (Sxy ** 2)
             trace = Sxx + Syy
 
             # finder r for harris corner detection equation
-            r = det - k * (trace**2)
+            r = det - k * (trace ** 2)
 
             if bool(test):
-                CornerCoordinate.append([x, y, Ix[y,x], Iy[y,x], r])
+                CornerCoordinate.append([x, y, Ix[y, x], Iy[y, x], r])
 
             if r > threshold:
                 nul.itemset((y, x), 255)
@@ -119,19 +121,20 @@ for n in range(len(checkerboard_Imgs)):
 
         # If there is not enough coroner candidates found, then do not use the image or img points
         if len(ObjectsH) >= CheckPoints:
+            print('enough coroner ')
             usedimgsNum[imgcount] = True
             enoughPointimgs = enoughPointimgs + 1
             # Take the 54 biggest objects and make a circle around it. 54 = number of points at the checkerboard
             for h in range(CheckPoints):
                 corner = np.array(ObjectsH[h])
-                y_min = min(corner[:,0])
-                y_max = max(corner[:,0])
-                x_min = min(corner[:,1])
-                x_max = max(corner[:,1])
+                y_min = min(corner[:, 0])
+                y_max = max(corner[:, 0])
+                x_min = min(corner[:, 1])
+                x_max = max(corner[:, 1])
 
                 # Calculate the center of mass for each object
-                xbb = int((x_min + x_max)/2)
-                ybb = int((y_min + y_max)/2)
+                xbb = int((x_min + x_max) / 2)
+                ybb = int((y_min + y_max) / 2)
 
                 img.itemset((ybb, xbb, 0), 255)
                 img.itemset((ybb, xbb, 1), 0)
@@ -151,14 +154,12 @@ for n in range(len(checkerboard_Imgs)):
                     nextRow = CornerListX[start:stop]
                     CornerListSortedXY.append(sorted(nextRow, key=lambda x: x[1], reverse=True))
 
-            if n == 0:
-                imgspoints = np.zeros([CheckPoints, 2, numImgs])
-                imgspoints[:, :, n] = CornerList
-            else:
-                imgspoints[:, :, n] = CornerList
+            imgspoints[:, :, n] = CornerList
 
             # Draw a circle around the center
-            cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
+            cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness=2, lineType=cv.LINE_8)
+
+        print('one ')
 
     imgcount = imgcount + 1
 
@@ -204,19 +205,19 @@ print('Done!')
 
 print('Number of used images: ', usedimgsNum)
 
-plt.subplot(2,2,1)
+plt.subplot(2, 2, 1)
 plt.title("Billede")
 plt.imshow(img, cmap='gray')
 
-plt.subplot(2,2,2)
+plt.subplot(2, 2, 2)
 plt.title("Ixx")
 plt.imshow(Ixx, cmap='gray')
 
-plt.subplot(2,2,3)
+plt.subplot(2, 2, 3)
 plt.title("Iyy")
 plt.imshow(Iyy, cmap='gray')
 
-plt.subplot(2,2,4)
+plt.subplot(2, 2, 4)
 plt.title("Nul")
 plt.imshow(nul, cmap='gray')
 
