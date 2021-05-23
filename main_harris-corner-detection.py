@@ -8,7 +8,7 @@ import scipy.io
 import os
 import glob
 
-img_dir = "checkerboard_pics" # Enter Directory of all images
+img_dir = "checkerboard_picsOld" # Enter Directory of all images
 data_path = os.path.join(img_dir,'*JPG')
 files = glob.glob(data_path)
 filename_Imgs = []
@@ -25,11 +25,11 @@ print("Brew a cup of coffee or something, this is going to take some time")
 # Parameters
 windowSize = 3
 k = 0.04 # Parameter between 0.04 - 0.06
-threshold = 1000
+threshold = 10
 
 CheckPoints = 54
 usedimgsNum = 0
-imgCount = 0
+imgcount = 0
 enoughPointimgs = 0
 
 # Til test af cornerbilleder set til true eller false:
@@ -39,6 +39,7 @@ CornerCor = True
 
 for n in range(len(checkerboard_Imgs)):
     filename = filename_Imgs[n]
+
     img = checkerboard_Imgs[n]
 
     offset = int(windowSize/2)
@@ -130,33 +131,35 @@ for n in range(len(checkerboard_Imgs)):
                 img.itemset((ybb, xbb, 2), 0)
 
                 CornerList.append([ybb, xbb])
-
             if n == 0:
                 imgspoints = np.zeros([CheckPoints, 2, numImgs])
                 imgspoints[:, :, n] = CornerList
             else:
                 imgspoints[:, :, n] = CornerList
-
                 # Draw a circle around the center
                 cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
+    img_name = os.path.split(files[n])
+    print(img_name[1])
+    filedestination = "MarkedCheckerboards/" + img_name[1]
+    cv.imwrite(filedestination, img)
 
-        # Some images where not used because the corners where not found
-        # Therefore make a new array, where only all image points in the checkerboard where detected
-        ar = 0
-        for n in range(len(usedimgsNum)):
-            if n == 0 and usedimgsNum[n] == True:
-                imgspoints_print = np.zeros([CheckPoints, 2, enoughPointimgs])
-                imgspoints_print[:, :, n] = imgspoints[:, :, n]
-                ar = ar + 1
-            elif usedimgsNum[n] == True:
-                imgspoints_print[:, :, ar] = imgspoints[:, :, n]
-                ar = ar + 1
-            else:
-                print('Delete tha first image in checkerboard_pics or replace checkerboard images')
+    # Some images where not used because the corners where not found
+    # Therefore make a new array, where only all image points in the checkerboard where detected
+    ar = 0
+    for n in range(len(usedimgsNum)):
+        if n == 0 and usedimgsNum[n] == True:
+            imgspoints_print = np.zeros([CheckPoints, 2, enoughPointimgs])
+            imgspoints_print[:, :, n] = imgspoints[:, :, n]
+            ar = ar + 1
+        elif usedimgsNum[n] == True:
+            imgspoints_print[:, :, ar] = imgspoints[:, :, n]
+            ar = ar + 1
+        else:
+            print('Delete tha first image in checkerboard_pics or replace checkerboard images')
 
 scipy.io.savemat('imgPoints.mat', mdict={'imgspoints_print': imgspoints_print})
 
-'''
+"""
         print('Creating cornerlist file')
         CornerFileList = open('CornerFileList', 'w')
         CornerFileList.write('x, \t y \n')
@@ -175,8 +178,8 @@ scipy.io.savemat('imgPoints.mat', mdict={'imgspoints_print': imgspoints_print})
         CornerFile.close()
 
         scipy.io.savemat('imgpoint.mat', mdict={'CornerCoordinate': CornerCoordinate})
-    '''
 
+"""
 print('Done!')
 
 print('Number of used images: ', usedimgsNum)
