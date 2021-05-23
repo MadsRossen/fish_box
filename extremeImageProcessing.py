@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 import warnings
-import glob
 import copy
 
 
@@ -57,10 +56,6 @@ def findInRange(hsv_img, range_hsv=[]):
     lowerS = (range_hsv[1][0], range_hsv[1][1])
     lowerV = (range_hsv[2][0], range_hsv[2][1])
 
-    print(range_hsv)
-    print(lowerS)
-    print(lowerV)
-
     h, w, ch = hsv_img.shape[:3]
 
     segmentedImg = np.zeros((h, w), np.uint8)
@@ -71,15 +66,10 @@ def findInRange(hsv_img, range_hsv=[]):
             S = hsv_img.item(y, x, 1)
             V = hsv_img.item(y, x, 2)
             # If Hue lies in the lowerHueRange(Blue hue range) we want to segment it out
-            if lowerH[1] > H > lowerH[0]:
-                segmentedImg.itemset((y, x), 0)
-            elif lowerS[1] > S > lowerS[0]:
-                segmentedImg.itemset((y, x), 0)
-            # If Hue lies in the lowerValRange(black value range) we want to segment it out
-            elif lowerV[1] > V > lowerV[0]:
-                segmentedImg.itemset((y, x), 0)
-            else:
+            if lowerH[0] <= H <= lowerH[1] and lowerS[0] <= S <= lowerS[1] and lowerV[0] <= V <= lowerV[1]:
                 segmentedImg.itemset((y, x), 255)
+            else:
+                segmentedImg.itemset((y, x), 0)
 
     return segmentedImg
 
@@ -298,66 +288,6 @@ def convert_RGB_to_HSV(img):
             hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
 
     return hsv_img
-
-
-def grassFire(mask):
-    """
-    A grassfire algorithm for BLOB detection. Only input binary images of 0 and 255.
-
-    :param mask: The mask to extract BLOBS from
-    :return: An array of BLOBS
-    """
-    mask_copy = copy.copy(mask)
-
-    h, w = mask_copy.shape[:2]
-
-    h = h-1
-    w = w-1
-
-    save_array = []
-    zero_array = []
-    blob_array = []
-    temp_cord = []
-
-    # For each pixel in the mask
-    for y in range(h):
-        for x in range(w):
-            if mask_copy.item(y, x) == 0 and x <= h:
-                zero_array.append(mask_copy.item(y, x))
-            elif mask_copy.item(y, x) == 0 and x >= w:
-                zero_array.append(mask_copy.item(y, x))
-
-    # Looping if x == 1, and some pixels has to be burned
-            while mask_copy.item(y, x) > 0 or len(save_array) > 0:
-                mask_copy.itemset((y, x), 0)
-                temp_cord.append([y, x])
-
-                if mask_copy.item(y - 1, x) > 0:
-                    if [y - 1, x] not in save_array:
-                        save_array.append([y - 1, x])
-
-                if mask_copy.item(y, x - 1) > 0:
-                    if [y, x - 1] not in save_array:
-                        save_array.append([y, x - 1])
-
-                if mask_copy.item(y + 1, x) > 0:
-                    if [y + 1, x] not in save_array:
-                        save_array.append([y + 1, x])
-
-                if mask_copy.item(y, x + 1) > 0:
-                    if [y, x + 1] not in save_array:
-                        save_array.append([y, x + 1])
-
-                if len(save_array) > 0:
-                    y, x = save_array.pop()
-
-                else:
-                    blob_array.append(temp_cord)
-                    print(temp_cord)
-                    temp_cord = []
-                    break
-
-    return blob_array
 
 
 def segment_cod(images, show_images=False):

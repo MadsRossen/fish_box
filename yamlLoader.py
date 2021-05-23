@@ -29,19 +29,12 @@ def setup_parameters(data_yaml):
 
     print("Setting up the parameters...")
 
-    kernels = []
     checkerboard_dimensions = []
     paths = []
     clahe = []
     cali_parameters = []
 
     # Get the different parameters
-    kernels_data = data_yaml.get('kernels')
-    for open_kernel, closed_kernel in kernels_data.items():
-        kernels_c = [open_kernel, closed_kernel]
-        kernels.append(kernels_c)
-    print(kernels)
-
     checkerboard_dimensions_data = data_yaml.get('checkerboard_dimensions')
     for x, y in checkerboard_dimensions_data.items():
         checkerboard_dimensions_c = [x, y]
@@ -69,4 +62,4 @@ def setup_parameters(data_yaml):
 
     print("Done setting up the parameters!")
 
-    return kernels, checkerboard_dimensions, paths, clahe, cali_parameters
+    return checkerboard_dimensions, paths, clahe, cali_parameters

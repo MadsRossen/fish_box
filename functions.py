@@ -7,8 +7,6 @@ import extremeImageProcessing as eip
 import copy
 
 from matplotlib import pyplot as plt  # --- Is this still used in final?
-# A library that has a equalize matcher!
-from skimage.exposure import match_histograms  # --- Is this still used in final?
 
 
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
@@ -117,7 +115,7 @@ def resizeImg(img, scale_percent):
     return resized
 
 
-def detect_bloodspots(imgs):
+def detect_bloodspots(imgs, show_img=False):
 
     print("Started detecting blood spots...")
 
@@ -128,7 +126,8 @@ def detect_bloodspots(imgs):
     count = 0
 
     for n in imgs:
-        hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
+        # hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
+        hsv_img = eip.convert_RGB_to_HSV(copy.copy(n))
 
         booleans_bloodspot.append(False)
         marked_bloodspots_imgs.append(copy.copy(n))
@@ -138,23 +137,17 @@ def detect_bloodspots(imgs):
         S_range = (90, 255)
         V_range = (90, 255)
 
-        #frame_threshold1 = eip.findInRange(hsv_img, [H_range, S_range, V_range])
-        frame_threshold1 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
-
-        cv2.imshow("Test", frame_threshold1)
-        cv2.waitKey(0)
+        # Find the blood in the specified range
+        frame_threshold1_own = eip.findInRange(hsv_img, [H_range, S_range, V_range])
 
         # Combining the masks
-        mask_bloodspots.append(frame_threshold1)
+        mask_bloodspots.append(frame_threshold1_own)
 
         # Create kernels for morphology
         kernelOpen = 3
-        kernelClose = 51
+        kernelClose = 5
 
         # Perform morphology
-        # open_morph = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_OPEN, kernelOpen)
-        # close_morph = cv2.morphologyEx(open_morph, cv2.MORPH_CLOSE, kernelClose)
-
         masks, _ = morphology_operations(mask_bloodspots, imgs, kernelOpen, kernelClose, False, False)
 
         # Perform bitwise operation to show bloodspots instead of BLOBS
@@ -164,10 +157,12 @@ def detect_bloodspots(imgs):
         # Find contours
         contours, _ = cv2.findContours(masks[count], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        cv2.imshow("IMGHSV", masks[count])
-        cv2.waitKey(0)
+        # For debugging
+        if show_img:
+            cv2.imshow("IMGHSV", masks[count])
+            cv2.waitKey(0)
 
-        # Classify as blood spots if the spots are big enought
+        # Classify as blood spots if the spots are big enough
         for cont in contours:
             area = cv2.contourArea(cont)
             if area > 0:
@@ -176,7 +171,6 @@ def detect_bloodspots(imgs):
                 cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
                 # Draw green contour
                 cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
-                #cv2.drawContours(marked_bloodspots_imgs[count], [cont], -1, (0,255,0), 2)
                 booleans_bloodspot.append(True)
 
         count = count + 1
@@ -244,7 +238,6 @@ def morphology_operations(masks, images, open_kern_val, close_kern_val, change_k
     res_array = []
     # Looping through each mask
     for n in masks:
-        print(n)
         while True:
             # If we wanna change the kernel by trackbar
             if change_kernel:
@@ -255,10 +248,6 @@ def morphology_operations(masks, images, open_kern_val, close_kern_val, change_k
             # Make kernels for each morph type
             kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_open_val, kernel_val_open_val))
             kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_val_close_val, kernel_val_close_val))
-
-            # To make
-            # if n < 1:
-                # n = masks
 
             # Only use opening and closing when the slider is moved instead of every frame
             if old_open_val != kernel_val_open_val or old_closes_val != kernel_val_close_val or change_kernel is False:
@@ -407,7 +396,6 @@ def find_contours(masks, images, change_kernel=False, show_img=False):
     old_open_val, old_closes_val = 0, 0
     contours = []
     image_n = 0
-    opening = None
     closing = None
 
     # Looping through each mask
@@ -469,7 +457,7 @@ def find_contours(masks, images, change_kernel=False, show_img=False):
     return contours
 
 
-def rotateImages(rotate_img, xcm, ycm, contours):
+def raytracing(rotate_img, xcm, ycm, contours):
     """
     A function that can rotate a set of images, so the longest part has an angle of zero relative to the
     positive x-axis. This is done by line tracing each point on the contours relative to
@@ -564,7 +552,6 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
             # Draw and display the corners
             cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
             if show_img:
-                print(imgpoints)
                 cv2.imshow('img', img)
                 cv2.imshow('gray', gray)
                 cv2.waitKey(0)
@@ -614,47 +601,3 @@ def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show
 
         # If the function fails, return the input arguments
         return images_distort
-
-
-def replaceHighlights(main_img, spec_img, limit):
-    """
-    This functions replaces the highlights from a main picture with the pixels from a specular image pixels.
-
-    :param main_img: The image of which will get the pixels replaced with the specular image
-    :param spec_img: The image of which will be used to replace the pixels of the main image
-    :param limit: The limits of a pixel value before it is classified as a specular highlight
-    :return: The image that has the highlights replaced
-    """
-
-    print("Replacing highlights...")
-
-    # Create copy
-    img_main_cop = np.copy(main_img)
-    img_spec_cop = np.zeros((spec_img.shape[0], spec_img.shape[1], 3), np.uint8)
-
-    # Isolate the areas where the color is white
-    main_img_spec = np.where((img_main_cop[:, :, 0] >= limit) & (img_main_cop[:, :, 1] >= limit) &
-                             (img_main_cop[:, :, 2] >= limit))
-
-    img_spec_cop[main_img_spec] = spec_img[main_img_spec]
-    img_main_cop[main_img_spec] = (0, 0, 0)
-
-    img_main_cop[main_img_spec] = img_spec_cop[main_img_spec]
-
-    # Different methods, find out what works best later
-    match = match_histograms(img_spec_cop, img_main_cop, multichannel=True)
-    match2 = match_histograms(spec_img, img_main_cop, multichannel=True)
-
-    # Replace pixels, replace the matches to use different methods
-    img_main_cop[main_img_spec] = match2[main_img_spec]
-
-    cv2.imshow("match", match2)
-    cv2.imshow("spec_img", spec_img)
-    cv2.imshow("final", img_main_cop)
-    cv2.imshow("Spec", img_spec_cop)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    print("Done replacing the highlights!")
-
-    return img_main_cop
