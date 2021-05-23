@@ -351,6 +351,9 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
 
 def saveCDI(img_list_fish, percSpotCoverage):
+
+    print("Started CDI...")
+
     f = open("CDI.txt", "w+")
 
     line = ("-----------------------------------------------------------------\n")
@@ -376,3 +379,5 @@ def saveCDI(img_list_fish, percSpotCoverage):
 
     f.write(line)
     f.close()
+
+    print("Done writing the CDI!")

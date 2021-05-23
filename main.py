@@ -44,7 +44,10 @@ if run_own_functions == 'y':
     images_morph, res_images = ft.morphology_operations(masks, segmented_images, 5, 7, False, False)
 
     # Blood spot detection
-    _, _, marked_bloodspots_imgs, _ = ft.detect_bloodspots(res_images)
+    masks_woundspot, _, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
+
+    # CDI
+    ftc.saveCDI(names, damage_percentage)
 
     if experimental == 'e':
         # Get the contours
@@ -60,7 +63,7 @@ if run_own_functions == 'y':
         cv2.imshow("Final segmented image", segmented_images[0])
 
     # Display the final images
-    cv2.imshow("Final bloodspot detection", marked_bloodspots_imgs[0])
+    cv2.imshow("Final bloodspot detection", marked_woundspots_imgs[0])
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

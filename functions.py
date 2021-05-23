@@ -115,45 +115,73 @@ def resizeImg(img, scale_percent):
     return resized
 
 
-def detect_bloodspots(imgs, show_img=False):
+def percentage_damage(mask, img):
+    """
+    Get the percentage of wound pixels compared to the segmented fish pixels.
 
-    print("Started detecting blood spots...")
+    :param mask: Mask of the wound spots
+    :param img: The segmented fish without the background
+    :return:
+    """
 
-    mask_bloodspots = []
+    mask_pixels = np.argwhere(mask > 0)
+    img_pixels = np.argwhere(img > 0)
+
+    # Calculate the percentage of damage using the surface area pixel amount
+    percentage = round((len(mask_pixels) / len(img_pixels)) * 100, 2)
+
+    return percentage
+
+
+def detect_woundspots(imgs, show_img=False):
+
+    print("Started detecting wound spots...")
+
+    mask_woundspots = []
     segmented_blodspots_imgs = []
-    marked_bloodspots_imgs = []
-    booleans_bloodspot = []         # List of boolean values for each image classification
+    marked_woundspots_imgs = []
+    booleans_woundspot = []         # List of boolean values for each image classification
     count = 0
+    damage_percentage_array = []
 
     for n in imgs:
         # hsv_img = cv2.cvtColor(copy.copy(n), cv2.COLOR_BGR2HSV)
         hsv_img = eip.convert_RGB_to_HSV(copy.copy(n))
 
-        booleans_bloodspot.append(False)
-        marked_bloodspots_imgs.append(copy.copy(n))
+        booleans_woundspot.append(False)
+        marked_woundspots_imgs.append(copy.copy(n))
 
-        # Threshold for blood spots
+        # Threshold for wound spots
         H_range = (0, 10)
         S_range = (90, 255)
         V_range = (90, 255)
 
-        # Find the blood in the specified range
+        # Find the wound in the specified range
         frame_threshold1_own = eip.findInRange(hsv_img, [H_range, S_range, V_range])
 
         # Combining the masks
-        mask_bloodspots.append(frame_threshold1_own)
+        mask_woundspots.append(frame_threshold1_own)
 
         # Create kernels for morphology
         kernelOpen = 3
         kernelClose = 5
 
         # Perform morphology
-        masks, _ = morphology_operations(mask_bloodspots, imgs, kernelOpen, kernelClose, False, False)
+        masks, _ = morphology_operations(mask_woundspots, imgs, kernelOpen, kernelClose, False, False)
 
-        # Perform bitwise operation to show bloodspots instead of BLOBS
+        # Perform bitwise operation to show wound spots instead of BLOBS
         segmented_blodspots_imgs.append(eip.bitwise_and(n, masks[count]))
 
-        # Make representation of BLOB / bloodspots
+        # Wound percentage analysis
+        damage_percentage = percentage_damage(masks[count], n)
+        damage_percentage_array.append(damage_percentage)
+
+        print(f"{damage_percentage}%")
+
+        # From here and down is not our own functions, as we use openCV to show where the detected damages are.
+        # Due to time restraints we could not implement our own solution to this.
+
+        # Make representation of BLOB / wound spots
         # Find contours
         contours, _ = cv2.findContours(masks[count], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -162,22 +190,22 @@ def detect_bloodspots(imgs, show_img=False):
             cv2.imshow("IMGHSV", masks[count])
             cv2.waitKey(0)
 
-        # Classify as blood spots if the spots are big enough
+        # Classify as wound spots if the spots are big enough
         for cont in contours:
             area = cv2.contourArea(cont)
             if area > 0:
                 x, y, w, h = cv2.boundingRect(cont)
                 # Create tag
-                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
+                cv2.putText(marked_woundspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
                 # Draw green contour
-                cv2.rectangle(marked_bloodspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2);
-                booleans_bloodspot.append(True)
+                cv2.rectangle(marked_woundspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2)
+                booleans_woundspot.append(True)
 
         count = count + 1
 
-    print("Finished detecting blood spots!")
+    print("Finished detecting wound spots!")
 
-    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, booleans_bloodspot
+    return mask_woundspots, segmented_blodspots_imgs, marked_woundspots_imgs, booleans_woundspot, damage_percentage_array
 
 
 # Used for the trackbars
@@ -513,91 +541,3 @@ def raytracing(rotate_img, xcm, ycm, contours):
     print("Done raytracing!")
     plt.show()
     return rotate_img
-
-
-def checkerboard_calibrate(dimensions, images_distort, images_checkerboard, show_img=False):
-    """
-    Undistorts images by a checkerboard calibration.
-
-    :param show_img: Debug to see if all the images are loaded and all the edges are found
-    :param dimensions: The dimensions of the checkerboard from a YAML file
-    :param images_distort: The images the needs to be undistorted
-    :param images_checkerboard: The images of the checkerboard to calibrate by
-    :return: If it succeeds, returns the undistorted images, if it fails, returns the distorted images with a warning
-    """
-
-    print("Started calibrating...")
-
-    # termination criteria
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 25, 0.001)
-
-    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    objp = np.zeros((dimensions[0][1] * dimensions[1][1], 3), np.float32)
-    objp[:, :2] = np.mgrid[0:6, 0:9].T.reshape(-1, 2)
-
-    # Arrays to store object points and image points from all the images.
-    objpoints = []  # 3d point in real world space
-    imgpoints = []  # 2d points in image plane.
-    for img in images_checkerboard:
-        gray = eip.grayScaling(img)
-
-        # Find the chess board corners
-        ret, corners = cv2.findChessboardCorners(gray, (6, 9), None)
-
-        # If found, add object points, image points (after refining them)
-        if ret is True:
-            objpoints.append(objp)
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            imgpoints.append(corners)
-            # Draw and display the corners
-            cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
-            if show_img:
-                cv2.imshow('img', img)
-                cv2.imshow('gray', gray)
-                cv2.waitKey(0)
-        else:
-            warnings.warn("No ret! This might lead to a crash.")
-    # The function doesn't always find the checkerboard, therefore we have to try, and if not, pass exception
-    try:
-        # Calibrate the camera
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[:2], None, None)
-
-        # Go through all the images and undistort them
-        img_undst = []
-        for n in images_distort:
-            # Get image shape
-            h, w = n.shape[:2]
-            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-
-            # undistorted
-            mapx, mapy = cv2.initUndistortRectifyMap(mtx, dist, None, newcameramtx, (w, h), 5)
-            dst = cv2.remap(n, mapx, mapy, cv2.INTER_LINEAR)
-
-            # crop the image back to original shape
-            x, y, w, h = roi
-            dst = dst[y:y + h, x:x + w]
-            img_undst.append(dst)
-            if show_img:
-                cv2.imshow('calibresult.png', dst)
-                cv2.waitKey(0)
-
-        print("Done calibrating")
-
-        return img_undst
-
-    except ValueError:
-        # If the calibration fails, inform us and tell us the error
-        warnings.warn(f"Could not calibrate camera. Check images. Error {ValueError}")
-        mean_error = 0
-        tot_error = 0
-
-        # Show the total error
-        for i in range(len(objpoints)):
-            imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-            error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-            tot_error += error
-
-        print("total error: ", mean_error / len(objpoints))
-
-        # If the function fails, return the input arguments
-        return images_distort
