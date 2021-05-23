@@ -4,7 +4,10 @@ from fractions import Fraction as frac
 import copy
 
 def blur(img):   
-    """ Input a image """
+    '''
+    blurs input image
+
+    '''
 
     img = copy.copy(img)
 
@@ -17,7 +20,6 @@ def blur(img):
     row, col = np.shape(kernel)
 
     blur = frac(1, col**2 * row**2) * kernel # Blurring kernel 
-
 
     for y in range(imgy - (row + 1)):
         for x in range(imgx - (col + 1)):

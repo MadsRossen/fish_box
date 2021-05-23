@@ -5,7 +5,41 @@ import glob
 import numpy as np
 import os
 import scipy.io
+import copy
 from matplotlib import pyplot as plt
+
+'''
+# Sort 2D numpy array by 1nd Column from high to low
+CornerList = [[3, 20],[1, 4],[2, 1],[5, 1]]
+print(CornerList)
+
+imgspoints = np.zeros((2,4,2))
+
+CornerListSortedX = sorted(CornerList, key=lambda x: x[0], reverse=True)
+
+CornerListSortedXY = []
+
+array = []
+
+# Sort 2D numpy array by 2nd Column from high to low, but only for checkerboard_size[1] at a time
+checkerboard_size = 2
+for n in range(int(4 / checkerboard_size)):
+    start = n * checkerboard_size
+    stop = start + checkerboard_size
+    nextRows = CornerListSortedX[start:stop]
+    nextRows_sorted = sorted(nextRows, key=lambda x: x[1], reverse=True)
+    for x in range(len(nextRows_sorted)):
+        CornerListSortedXY.append(nextRows_sorted[x])
+
+array.append(CornerListSortedXY)
+array.append(CornerListSortedXY)
+
+np_array = np.array(array)
+np_array_switch = np.moveaxis(np_array, 0, -1)
+
+scipy.io.savemat('np_array_switch.mat', mdict={'np_array_switch': np_array_switch})
+'''
+# Code starts here
 
 img_dir = "checkerboard_pics"  # Enter Directory of all images
 data_path = os.path.join(img_dir, '*JPG')
@@ -40,7 +74,7 @@ CornerCor = True
 
 for n in range(len(checkerboard_Imgs)):
     if n == 0:
-        imgspoints = np.zeros([CheckPoints, 2, numImgs])
+        CornerListSortedXY_stacked = []
 
     filename = filename_Imgs[n]
     img = checkerboard_Imgs[n]
@@ -113,6 +147,7 @@ for n in range(len(checkerboard_Imgs)):
 
         # Corner list for all corner candidates
         CornerList = []
+        CornerListSortedXY = []
 
         # Corner list for sorted and best corner candidates
         CornerListSortedXY = []
@@ -121,9 +156,9 @@ for n in range(len(checkerboard_Imgs)):
 
         # If there is not enough coroner candidates found, then do not use the image or img points
         if len(ObjectsH) >= CheckPoints:
-            print('enough coroner ')
             usedimgsNum[imgcount] = True
             enoughPointimgs = enoughPointimgs + 1
+
             # Take the 54 biggest objects and make a circle around it. 54 = number of points at the checkerboard
             for h in range(CheckPoints):
                 corner = np.array(ObjectsH[h])
@@ -140,28 +175,31 @@ for n in range(len(checkerboard_Imgs)):
                 img.itemset((ybb, xbb, 1), 0)
                 img.itemset((ybb, xbb, 2), 0)
 
-                CornerList.append([ybb, xbb])
+                # Draw a circle around the center
+                cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness=2, lineType=cv.LINE_8)
 
-                columnIndex = 0
+                CornerList.append([xbb, ybb])
 
-                # Sort 2D numpy array by 1nd Column from high to low
-                CornerListX = sorted(CornerList, key=lambda x: x[0], reverse=True)
+            # Sort 2D numpy array by 1st Column from high to low
+            CornerListSortedX = sorted(CornerList, key=lambda x: x[0], reverse=True)
 
-                # Sort 2D numpy array by 2nd Column from high to low, but only for 6 at a time
-                for n in range(int(CheckPoints / checkerboard_size[1])):
-                    start = n * checkerboard_size[1]
-                    stop = n * checkerboard_size[1]
-                    nextRow = CornerListX[start:stop]
-                    CornerListSortedXY.append(sorted(nextRow, key=lambda x: x[1], reverse=True))
+            # Sort 2D numpy array by 2nd Column from high to low, but only for checkerboard_size[1] at a time
+            for n in range(int(CheckPoints / checkerboard_size[1])):
+                start = n * checkerboard_size[1]
+                stop = start + checkerboard_size[1]
+                nextRows = CornerListSortedX[start:stop]
+                nextRows_sorted = sorted(nextRows, key=lambda x: x[1], reverse=True)
+                for x in range(len(nextRows_sorted)):
+                    CornerListSortedXY.append(nextRows_sorted[x])
 
-            imgspoints[:, :, n] = CornerList
-
-            # Draw a circle around the center
-            cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness=2, lineType=cv.LINE_8)
-
-        print('one ')
+            CornerListSortedXY_stacked.append(CornerListSortedXY)
 
     imgcount = imgcount + 1
+
+np_array = np.array(CornerListSortedXY_stacked)
+np_array_switch = np.moveaxis(np_array, 0, -1)
+
+scipy.io.savemat('np_array_switch.mat', mdict={'np_array_switch': np_array_switch})
 
 # Some images where not used because the corners where not found
 # Therefore make a new array, where only all image points in the checkerboard where detected
