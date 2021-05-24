@@ -46,7 +46,6 @@ if openCV:
 
     # Crop to ROI
     cropped_images = crop(fish_cali, 710, 200, 720, 2500)
-    cv2.imwrite('fish_pics/segment_this.JPG', cropped_images[5])
     stepsList.append(cropped_images[showFish])
 
     # Threshold to create a mask for each image

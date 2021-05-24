@@ -401,7 +401,7 @@ def grassfire_v2(mask):
 
 
 def saveCDI(img_list_fish, percSpotCoverage):
-    f = open("CDI.txt", "w+")
+    f = open("output_CDI\CDI.txt", "w+")
 
     line = ("-----------------------------------------------------------------\n")
 
