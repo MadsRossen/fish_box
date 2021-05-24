@@ -168,7 +168,7 @@ np_array = np.array(CornerListSortedXY_stacked)
 np_array_switch = np.moveaxis(np_array, 0, -1)
 
 # Save the np. array in .mat format
-scipy.io.savemat('np_array_switch.mat', mdict={'np_array_switch': np_array_switch})
+scipy.io.savemat('image_points_checkerboard/image_points_for_MATLAB.mat', mdict={'np_array_switch': np_array_switch})
 
 print('Done!')
 
