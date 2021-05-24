@@ -173,6 +173,13 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
 
 
 def resizeImg(img, scale_percent):
+    """
+    Resizes the image by a scalar
+
+    :param img: the image to resize
+    :param scale_percent: The scaling percentage
+    :return: the image scaled by the scalar
+    """
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
@@ -184,6 +191,14 @@ def resizeImg(img, scale_percent):
 
 
 def segment_codOPENCV(images, show_images=False):
+    """
+    Segments cods from the background.
+
+    :param images: An array of images of which to segment the cod from
+    :param show_images: To display the segmented cods or not
+    :return: an array of images with the cod segmented and masks of the cods
+    """
+
     print("Started segmenting the cod!")
 
     inRangeImages = []
@@ -294,8 +309,9 @@ def save_imgOPENCV(imgs, path, originPathNameList):
 
 def crop(images, y, x, height, width):
     '''
-    Crops images
-    :param images:
+    Crops images.
+
+    :param images: The images to crop
     :return: Cropped images
     '''
 
@@ -351,6 +367,14 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
 
 def saveCDI(img_list_fish, percSpotCoverage):
+
+    """
+    Saves a CDI of each fish in a .txt file.
+
+    :param img_list_fish: The names of each fish
+    :param percSpotCoverage: The percentage the wound covers the surface area of one side of the fish
+    :return:
+    """
 
     print("Started CDI...")
 

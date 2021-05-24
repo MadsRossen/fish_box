@@ -68,35 +68,6 @@ def save_img(img, save_image_path):
         cv2.imwrite(save_image_path+"\\fish.jpg", img)
 
 
-def claheHSL(img, clipLimit, tileGridSize):
-    """
-    Turns an image into a claheHSL image.
-
-    :param img: The main image
-    :param clipLimit: Set in parameters
-    :param tileGridSize: Set in parameters
-    :return: The claheHSL image
-    """
-
-    # Convert BGR to HSL
-    fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-
-    # Get the first channel
-    LChannelHLS = fiskHLS2[:, :, 1]
-
-    # Create clahe using the cliplimit and tileGridSize set from parameters
-    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
-
-    # Apply the first channel
-    claheLchannel1 = clahe.apply(LChannelHLS)
-    fiskHLS2[:, :, 1] = claheLchannel1
-
-    # Convert back to BGR from HLS
-    fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
-
-    return fiskClahe
-
-
 def resizeImg(img, scale_percent):
     """
     Resizes the image by a scaling percent.
@@ -128,17 +99,23 @@ def percentage_damage(mask, img):
     img_pixels = np.argwhere(img > 0)
 
     # Calculate the percentage of damage using the surface area pixel amount
-    percentage = round((len(mask_pixels) / len(img_pixels)) * 100, 2)
+    percentage = round((len(mask_pixels) / len(img_pixels)) * 100, 3)
 
     return percentage
 
 
 def detect_woundspots(imgs, show_img=False):
+    """
+    Detects wounds on the cods.
 
+    :param imgs: An array of images with segmented cods
+    :param show_img: For debug purposes, shows segmented images if left true
+    :return: Masked wounds, segmented wounds, marked wounds, boolean wounds and the percentage the wounds covers the cod
+    """
     print("Started detecting wound spots...")
 
     mask_woundspots = []
-    segmented_blodspots_imgs = []
+    segmented_woundspots_imgs = []
     marked_woundspots_imgs = []
     booleans_woundspot = []         # List of boolean values for each image classification
     count = 0
@@ -170,7 +147,7 @@ def detect_woundspots(imgs, show_img=False):
         masks, _ = morphology_operations(mask_woundspots, imgs, kernelOpen, kernelClose, False, False)
 
         # Perform bitwise operation to show wound spots instead of BLOBS
-        segmented_blodspots_imgs.append(eip.bitwise_and(n, masks[count]))
+        segmented_woundspots_imgs.append(eip.bitwise_and(n, masks[count]))
 
         # Wound percentage analysis
         damage_percentage = percentage_damage(masks[count], n)
@@ -178,7 +155,7 @@ def detect_woundspots(imgs, show_img=False):
 
         print(f"{damage_percentage}%")
 
-        # From here and down is not our own functions, as we use openCV to show where the detected damages are.
+        # From here and down in this function is not our own functions, as we use openCV to show where the detected damages are.
         # Due to time restraints we could not implement our own solution to this.
 
         # Make representation of BLOB / wound spots
@@ -205,7 +182,7 @@ def detect_woundspots(imgs, show_img=False):
 
     print("Finished detecting wound spots!")
 
-    return mask_woundspots, segmented_blodspots_imgs, marked_woundspots_imgs, booleans_woundspot, damage_percentage_array
+    return mask_woundspots, segmented_woundspots_imgs, marked_woundspots_imgs, booleans_woundspot, damage_percentage_array
 
 
 # Used for the trackbars
@@ -466,7 +443,7 @@ def find_contours(masks, images, change_kernel=False, show_img=False):
             if key == 27 or change_kernel is False:
                 break
 
-        # Find contours, implement grassfire algorithm
+        # Find contours
         contours_c, hierarchy = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         print(f"Contours length:{len(contours)}")

@@ -10,6 +10,7 @@ import sys
 run_own_functions = sys.argv[1]
 experimental = 0
 
+# Does the user wanna use our own functions or OpenCV functions. y for own functions, n for openCV
 if run_own_functions == 'y':
 
     print("Running program with own built-in functions")
@@ -20,6 +21,7 @@ if run_own_functions == 'y':
     # First check if the software should run the experimental
     if len(sys.argv) > 2:
         experimental = sys.argv[2]
+        # debug = sys.argv[3]
 
     # Load in yaml data from the file
     yaml_data = yamlL.yaml_loader("parameters.yaml")
@@ -31,11 +33,14 @@ if run_own_functions == 'y':
     images, names = ft.loadImages(paths[0][1], False, False, 60)
 
     # Calibrate camera and undistort images
-    #fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
-                              #cali_pa[5][1], True)
+    fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
+                              cali_pa[5][1], True)
 
-    # Crop to ROI
-    cropped_images = eip.crop(images, 710, 200, 720, 2500)
+    # Save the undistorted image for further inspection
+    cv2.imwrite('fishpics/UndiImg/undi_fish.JPG', fish_cali[0])
+
+    # Crop to ROI to make the processing time smaller
+    cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
 
     # Threshold to create a mask for each image
     masks, segmented_images = eip.segment_cod(cropped_images, False)
@@ -46,9 +51,10 @@ if run_own_functions == 'y':
     # Blood spot detection
     masks_woundspot, _, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
 
-    # CDI
+    # CDI in a text file
     ftc.saveCDI(names, damage_percentage)
 
+    # If the user wanna try the experimental features of the program
     if experimental == 'e':
         # Get the contours
         contour = ft.find_contours(masks, cropped_images, False, False)
@@ -62,12 +68,12 @@ if run_own_functions == 'y':
         # Display the final images
         cv2.imshow("Final segmented image", segmented_images[0])
 
+    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))
+
     # Display the final images
     cv2.imshow("Final bloodspot detection", marked_woundspots_imgs[0])
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))
 
 elif run_own_functions == "n":
 
