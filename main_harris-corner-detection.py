@@ -139,6 +139,8 @@ for n in range(len(checkerboard_Imgs)):
 
                 # Draw a circle around the center
                 cv.circle(img, (xbb, ybb), 30, (255, 0, 0), thickness = 2, lineType = cv.LINE_8)
+        elif n == 0:
+            print('delete the first image in the folder checkerboard_pics')
 
         # Some images where not used because the corners where not found
         # Therefore make a new array, where only all image points in the checkerboard where detected
@@ -149,7 +151,7 @@ for n in range(len(checkerboard_Imgs)):
                 imgspoints_print[:, :, n] = imgspoints[:, :, n]
                 ar = ar + 1
             elif usedimgsNum[n] == True:
-                imgspoints_print[:, :, ar] = imgspoints[:, :, n]
+                imgspoints_print[:, :, n] = imgspoints[:, :, ar]
                 ar = ar + 1
             else:
                 print('Delete tha first image in checkerboard_pics or replace checkerboard images')
