@@ -19,7 +19,7 @@ def blur(img):
 
     row, col = np.shape(kernel)
 
-    blur = frac(1, col**2 * row**2) * kernel # Blurring kernel 
+    blur = frac(1, col * row) * kernel # Blurring kernel
 
     for y in range(imgy - (row + 1)):
         for x in range(imgx - (col + 1)):

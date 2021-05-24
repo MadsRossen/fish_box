@@ -26,8 +26,8 @@ print("Brew a cup of coffee or something, this is going to take some time")
 
 # Parameters
 windowSize = 3
-k = 0.04  # Parameter between 0.04 - 0.06
-threshold = 10  # Threshold for R value representing corner response value
+k = 0.06  # Parameter between 0.04 - 0.06
+threshold = 10000  # Threshold for R value representing corner response value
 checkerboard_size = [9, 6]
 CheckPoints = checkerboard_size[0] * checkerboard_size[1]  # Number of checkpoints
 imgcount = 0  # Count of images
