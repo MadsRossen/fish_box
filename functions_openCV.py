@@ -217,6 +217,50 @@ def segment_codOPENCV(images, show_images=False):
 
     return inRangeImages, segmentedImages
 
+def segment_cod_CLAHEOPENCV(images, show_images=False):
+    print("Started segmenting the cod!")
+
+    inRangeImages = []
+    segmentedImages = []
+
+    for n in images:
+        hsv_img = copy.copy(n)
+        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
+
+        # Create threshold for segmenting cod
+        mask = cv2.inRange(hsv_img, (99, 15, 30), (123, 255, 255))
+
+        # Invert the mask
+        mask = (255 - mask)
+
+        # Create kernels for morphology
+        # kernelOpen = np.ones((4, 4), np.uint8)
+        # kernelClose = np.ones((7, 7), np.uint8)
+
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((5, 5), np.uint8)
+
+        # Perform morphology
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen, iterations=3)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose, iterations=5)
+
+        segmented_cods = cv2.bitwise_and(n, n, mask=close2)
+
+        segmented_cods[close2 == 0] = (255, 255, 255)
+
+        if show_images:
+            cv2.imshow("res", segmented_cods)
+            cv2.imshow("mask", mask)
+            cv2.waitKey(0)
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmented_cods)
+
+    print("Finished segmenting the cod!")
+
+    return inRangeImages, segmentedImages
+
 
 def showSteps(stepsList):
     '''
@@ -340,3 +384,19 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     print("Done loading the images!")
 
     return images, class_names, img_list
+
+
+def claheHSL(imgList, clipLimit, tileGridSize):
+    '''
+    Performs CLAHE on a list of images
+    '''
+    fiskClaheList = []
+    for img in imgList:
+        fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+        LChannelHLS = fiskHLS2[:, :, 1]
+        clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+        claheLchannel1 = clahe.apply(LChannelHLS)
+        fiskHLS2[:, :, 1] = claheLchannel1
+        fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
+        fiskClaheList.append(fiskClahe)
+    return fiskClaheList

@@ -235,16 +235,6 @@ def normHistEqualizeHLS(img):
     return fiskNomrHistEq
 
 
-def claheHSL(img, clipLimit, tileGridSize):
-    fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-    LChannelHLS = fiskHLS2[:, :, 1]
-    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
-    claheLchannel1 = clahe.apply(LChannelHLS)
-    fiskHLS2[:, :, 1] = claheLchannel1
-    fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
-    return fiskClahe
-
-
 def claheLAB(img, clipLimit, tileGridSize):
     fiskLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     LChannelLAB = fiskLAB[:, :, 0]

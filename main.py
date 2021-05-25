@@ -6,7 +6,7 @@ import cv2
 from extremeImageProcessing import saveCDI
 # Imports of functions where openCV functions have been used:
 from functions_openCV import checkerboard_calibrateOPENCV, detect_bloodspotsOPENCV, segment_codOPENCV, showSteps, \
-    save_imgOPENCV, crop, loadImages
+    save_imgOPENCV, crop, loadImages, claheHSL, segment_cod_CLAHEOPENCV
 from yamlLoader import yaml_loader, setup_parameters
 
 '''User options'''
@@ -44,13 +44,26 @@ if openCV:
                                              show_img=False, recalibrate=False)
     stepsList.append(fish_cali[showFish])
 
+    # Apply CLAHE
+    CLAHE = claheHSL(fish_cali, 2, (20,20))
+    stepsList.append(CLAHE[showFish])
+
     # Crop to ROI
     cropped_images = crop(fish_cali, 710, 200, 720, 2500)
     stepsList.append(cropped_images[showFish])
+    cropped_images_CLAHE = crop(CLAHE, 710, 200, 720, 2500)
 
     # Threshold to create a mask for each image
     mask_cod, img_segmented_cod = segment_codOPENCV(cropped_images)
     stepsList.append(img_segmented_cod[showFish])
+
+    cv2.imwrite('segment_this.JPG', cropped_images_CLAHE[0])
+    mask_cod, img_segmented_cod_CLAHE = segment_cod_CLAHEOPENCV(cropped_images_CLAHE)
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe1.JPG', img_segmented_cod_CLAHE[0])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe2.JPG', img_segmented_cod_CLAHE[1])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe3.JPG', img_segmented_cod_CLAHE[2])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe4.JPG', img_segmented_cod_CLAHE[3])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe5.JPG', img_segmented_cod_CLAHE[4])
 
     # Blood spot detection
     mask_bloodspots, bloodspots, marked_bloodspots, \
@@ -59,7 +72,7 @@ if openCV:
     stepsList.append(marked_bloodspots[showFish])
 
     # Save marked blood spots images in folder
-    save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images', img_list_fish)
+    save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images/marked_images', img_list_fish)
 
     # Save a .txt file with CDI (catch damage index)
     saveCDI(img_list_fish, percSpotCoverage)
