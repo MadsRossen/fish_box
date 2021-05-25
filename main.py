@@ -36,11 +36,11 @@ if run_own_functions == 'y':
     fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
                               cali_pa[5][1], True)
 
-    # Save the undistorted image for further inspection
-    cv2.imwrite('fishpics/UndiImg/undi_fish.JPG', fish_cali[0])
-
     # Crop to ROI to make the processing time smaller
     cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
+
+    # Save the undistorted image for further inspection
+    cv2.imwrite('fishpics/UndiImg/undi_fish.JPG', cropped_images[0])
 
     # Threshold to create a mask for each image
     masks, segmented_images = eip.segment_cod(cropped_images, False)

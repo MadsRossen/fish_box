@@ -95,11 +95,14 @@ def percentage_damage(mask, img):
     :return:
     """
 
-    mask_pixels = np.argwhere(mask > 0)
-    img_pixels = np.argwhere(img > 0)
+    mask_pixels = np.argwhere(mask)
+    img_pixels = np.argwhere(img)
 
-    # Calculate the percentage of damage using the surface area pixel amount
-    percentage = round((len(mask_pixels) / len(img_pixels)) * 100, 3)
+    print(f"Length of mask pixels: {len(img_pixels)}")
+
+    # Calculate the percentage of damage using the surface area pixel amount. We divide img_pixel with 3, since it
+    # contains non-zero pixels for all three channels, and we just want for one channel.
+    percentage = round(len(mask_pixels) / (len(img_pixels)/3) * 100, 3)
 
     return percentage
 
