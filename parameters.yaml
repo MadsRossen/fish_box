@@ -15,8 +15,8 @@ checkerboard_dimensions:
   y: 6
 
 paths:
-  fish: "fishpics/NewFish"
-  checkerboard_calibration: "fishpics/CheckerBoards"
+  fish: "fish_pics/input_images"
+  checkerboard_calibration: "calibration/checkerboard_pics"
   fish_histogram_test: "fishpics/Test11"
   safe_cali_img: "fishpics/calibrated_images"
 
