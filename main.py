@@ -45,17 +45,21 @@ if openCV:
     stepsList.append(fish_cali[showFish])
 
     # Apply CLAHE
-    CLAHE = claheHSL(fish_cali, 2, (20,20))
+    CLAHE = claheHSL(fish_cali, 2, (25,25))
     stepsList.append(CLAHE[showFish])
 
     # Crop to ROI
     cropped_images = crop(fish_cali, 710, 200, 720, 2500)
     stepsList.append(cropped_images[showFish])
     cropped_images_CLAHE = crop(CLAHE, 710, 200, 720, 2500)
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/ccc.JPG', cropped_images[2])
+
 
     # Threshold to create a mask for each image
     mask_cod, img_segmented_cod = segment_codOPENCV(cropped_images)
     stepsList.append(img_segmented_cod[showFish])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/segment.JPG', img_segmented_cod[2])
+
 
     cv2.imwrite('segment_this.JPG', cropped_images_CLAHE[0])
     mask_cod, img_segmented_cod_CLAHE = segment_cod_CLAHEOPENCV(cropped_images_CLAHE)
@@ -63,13 +67,14 @@ if openCV:
     cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe2.JPG', img_segmented_cod_CLAHE[1])
     cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe3.JPG', img_segmented_cod_CLAHE[2])
     cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe4.JPG', img_segmented_cod_CLAHE[3])
-    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/clahe5.JPG', img_segmented_cod_CLAHE[4])
+    cv2.imwrite('fish_pics/output_images/manual_inspection_CLAHE/mask_cod.JPG', mask_cod[2])
 
     # Blood spot detection
     mask_bloodspots, bloodspots, marked_bloodspots, \
     percSpotCoverage = detect_bloodspotsOPENCV(img_segmented_cod, mask_cod)
     stepsList.append(bloodspots[showFish])
     stepsList.append(marked_bloodspots[showFish])
+
 
     # Save marked blood spots images in folder
     save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images/marked_images', img_list_fish)
