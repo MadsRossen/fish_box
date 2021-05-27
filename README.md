@@ -14,16 +14,16 @@ The CDI marks which image file names that contains cod with wounds.
 
     NOTE: when running the program using own built functions it normally takes 420 sec. for one image. Consider having only few images in fish_pics/input_images
 
-3. Recalibrate the intrinsic parameters.
-    1. Put in checkerboard images into calibration/checkerboard_pics
-    2. Run the script calibration/main_harris-corner-detection.py. A .mat file is printed in calibration/image_points_checkerboard - "image_points_for_MATLAB"
-    4. Use this .mat file in the MATLAB code GetCameraParameters.m
-
-4. The output is saved
+3. The output is saved.
     1. Images for manual inspection is saved in fish_pics/output_images/manual_inspection
     2. Images for manual inspection with CLAHE applied is saved in fish_pics/output_images/manual_inspection_CLAHE
     3. Images where wounds are marked are saved in fish_pics/output_images/marked_images
     4. The CDI is saved in output_CDI
+
+- Optional: Recalibrate the intrinsic parameters used for undistorting.
+    1. Put in checkerboard images into calibration/checkerboard_pics
+    2. Run the script calibration/main_harris-corner-detection.py. A .mat file is printed in calibration/image_points_checkerboard - "image_points_for_MATLAB"
+    4. Use this .mat file in the MATLAB code GetCameraParameters.m
 
 ## Code overview
 
