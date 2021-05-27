@@ -172,6 +172,7 @@ def detect_woundspotsOPENCV(imgs, maskCod):
 
     return mask_woundspots, marked_woundspots_imgs, segmented_blodspots_imgs, percSpotCoverage
 
+
 def resizeImg(img, scale_percent):
     """
     Resizes the image by a scalar
@@ -243,45 +244,61 @@ def showSteps(stepsList, CLAHE=False):
     '''
 
     # OpenCV loads pictures in BGR, but the this step is plotted in RGB:
-    img_rgb = cv2.cvtColor(stepsList[0], cv2.COLOR_BGR2RGB)
-    img_undistorted_rgb = cv2.cvtColor(stepsList[1], cv2.COLOR_BGR2RGB)
-    img_cropped_rgb = cv2.cvtColor(stepsList[2], cv2.COLOR_BGR2RGB)
-    cod_CLAHErgb = cv2.cvtColor(stepsList[3], cv2.COLOR_BGR2RGB)
-    img_segmented_codrgb = cv2.cvtColor(stepsList[4], cv2.COLOR_BGR2RGB)
-    bloodspotsrgb = cv2.cvtColor(stepsList[5], cv2.COLOR_BGR2RGB)
-    marked_bloodspotssrgb = cv2.cvtColor(stepsList[6], cv2.COLOR_BGR2RGB)
+    count = 0
+    img_rgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+    count = count + 1
+    img_undistorted_rgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+    count = count + 1
+    img_cropped_rgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+    count = count + 1
+    if CLAHE:
+        cod_CLAHErgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+        count = count + 1
+    img_segmented_codrgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+    count = count + 1
+    bloodspotsrgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
+    count = count + 1
+    marked_bloodspotssrgb = cv2.cvtColor(stepsList[count], cv2.COLOR_BGR2RGB)
 
     fig = plt.figure()
     fig.suptitle('Steps in algorithm', fontsize=16)
 
-    plt.subplot(3, 3, 1)
+    subplot = 1
+    plt.subplot(3, 3, subplot)
     plt.imshow(img_rgb)
     plt.title('Original image')
+    subplot = subplot + 1
 
-    plt.subplot(3, 3, 2)
+    plt.subplot(3, 3, subplot)
     plt.imshow(img_undistorted_rgb)
     plt.title('Undistorted image')
+    subplot = subplot + 1
 
-    plt.subplot(3, 3, 3)
+    plt.subplot(3, 3, subplot)
     plt.imshow(img_cropped_rgb)
     plt.title('ROI')
+    subplot = subplot + 1
 
     if CLAHE:
-        plt.subplot(3, 3, 4)
+        plt.subplot(3, 3, subplot)
         plt.imshow(cod_CLAHErgb)
         plt.title('CLAHE')
+        subplot = subplot + 1
 
-    plt.subplot(3, 3, 5)
+    plt.subplot(3, 3, subplot)
     plt.imshow(img_segmented_codrgb)
     plt.title('Segmented cod')
+    subplot = subplot + 1
 
-    plt.subplot(3, 3, 6)
+    plt.subplot(3, 3, subplot)
     plt.imshow(bloodspotsrgb)
     plt.title('Blood spots segmented')
+    subplot = subplot + 1
 
-    plt.subplot(3, 3, 7)
+    plt.subplot(3, 3, subplot)
     plt.imshow(marked_bloodspotssrgb)
     plt.title('Blood spots tagged')
+    subplot = subplot + 1
 
     plt.show()
 
@@ -364,7 +381,7 @@ def loadImages(path, edit_images=False, show_img=False, scaling_percentage=30):
 
     print("Done loading the images!")
 
-    return images, class_names, img_list
+    return images, class_names
 
 
 def saveCDI(img_list_fish, percSpotCoverage):

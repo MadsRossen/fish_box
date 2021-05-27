@@ -1,7 +1,7 @@
 clear all
 
 % Load image for showing distortion effect.
-imageFileNames = {'./checkerboard_pics/GOPR1843.JPG'};
+imageFileNames = {'./checkerboard_pics/GOPR1629.JPG'};
 
 % Load image points.
 imagePointsOrigload = load('image_points_checkerboard/image_points_for_MATLAB.mat', '-mat');

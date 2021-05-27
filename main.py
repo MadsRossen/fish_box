@@ -12,8 +12,8 @@ try:
     sys.argv[1]
 except IndexError as ie:
     print(
-        "You need to pass arguments when running script \n \'n\' - for openCV \n \'y\' - for Group 460 built \n \'y e\'"
-        "- for Group 460 with extra non finnished functions")
+        "You need to pass arguments when running the script \n \'n\' - for openCV \n \'y\' - for Group 460 built \n \'y"
+        "e\' - for Group 460 with extra non finished functions")
 
 run_own_functions = sys.argv[1]
 experimental = 0
@@ -22,7 +22,7 @@ experimental = 0
 # Note for one cod image it takes around 420 sec
 if run_own_functions == 'y':
 
-    print("When running own built it normally takes 420 sec for 1 image")
+    print("When running own built it normally takes 420 sec for 1 image (8 min)")
     print("Therefore you might want to only have one image in fish_pics/input_images")
     print("Running program with own built-in functions")
 
@@ -64,9 +64,9 @@ if run_own_functions == 'y':
     images_morph, res_images = ft.morphology_operations(masks, segmented_images, 5, 7, False, False)
     stepsList.append(res_images[showFish])
 
-    # Blood spot detection
-    masks_woundspot, bloodspots, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
-    stepsList.append(bloodspots[showFish])
+    # Wounds spot detection
+    masks_woundspot, woundspots, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
+    stepsList.append(woundspots[showFish])
     stepsList.append(marked_woundspots_imgs[showFish])
 
     # Save marked wounds images in folder
@@ -76,7 +76,6 @@ if run_own_functions == 'y':
 
     # Marked images
     ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images/marked_images', img_list_fish, "_marked")
-
 
     # Save a .txt file with CDI (catch damage index)
     ftc.saveCDI(img_list_fish, damage_percentage)
@@ -117,11 +116,11 @@ elif run_own_functions == "n":
     checkerboard_dimensions, paths, clahe, cali_pa = yamlL.setup_parameters(yaml_data)
 
     # Load Fish images
-    images, img_list_fish, img_list_fish = ftc.loadImages(paths[0][1], edit_images=False,show_img=False, 40)
+    images, img_list_fish = ftc.loadImages(paths[0][1], edit_images=False, show_img=False)
     stepsList.append(images[showFish])
 
     # Load checkerboard images
-    img_cali, names_cali, _ = ftc.loadImages(paths[1][1], edit_images=False, show_img=False, 40)
+    img_cali, names_cali = ftc.loadImages(paths[1][1], edit_images=False, show_img=False)
 
     # Calibrate camera and undistort images
     fish_cali = ftc.checkerboard_calibrateOPENCV(checkerboard_dimensions, images, img_cali,
@@ -142,7 +141,7 @@ elif run_own_functions == "n":
     mask_cod_CLAHE, img_segmented_cod_CLAHE = ftc.segment_cod_CLAHEOPENCV(CLAHE)
 
     # Wound detection
-    mask_bloodspots, marked_woundspots_imgs, wounds , \
+    mask_woundspots, marked_woundspots_imgs, wounds, \
     percSpotCoverage = ftc.detect_woundspotsOPENCV(segmented_images, mask_cod)
     stepsList.append(wounds[showFish])
     stepsList.append(marked_woundspots_imgs[showFish])
@@ -150,12 +149,12 @@ elif run_own_functions == "n":
     # Save marked wounds images in folder
     # CLAHE images
     ftc.save_imgOPENCV(segmented_images, 'fish_pics/output_images/manual_inspection', img_list_fish,
-                       "_MANUAL_INSPECTION")
+                       "_openCV_MANUAL_INSPECTION")
     # CLAHE images
     ftc.save_imgOPENCV(img_segmented_cod_CLAHE, 'fish_pics/output_images/manual_inspection_CLAHE', img_list_fish,
-                       "_MANUAL_INSPECTION_CLAHE")
+                       "_openCV_MANUAL_INSPECTION_CLAHE")
     # Marked images
-    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images/marked_images', img_list_fish, "_marked")
+    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images/marked_images', img_list_fish, "_openCV_marked")
 
     # Save a .txt file with CDI (catch damage index)
     ftc.saveCDI(img_list_fish, percSpotCoverage)
