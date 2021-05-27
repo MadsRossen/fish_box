@@ -1,7 +1,8 @@
-import numpy as np
-import cv2
-import warnings
 import copy
+import warnings
+
+import cv2
+import numpy as np
 
 
 def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=False):
@@ -12,7 +13,7 @@ def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=Fals
     :return: The undistorted image
     '''
 
-    print("Started camera calibration...")
+    print("Started undistorting images...")
 
     undistortedImgs = []
 
@@ -45,13 +46,12 @@ def undistort(inputImgs, k_1, k_2, imgCenterX, imgCenterY, Fx, Fy, show_img=Fals
             cv2.imshow("Undistorted img", undistorted)
             cv2.waitKey(1)
 
-    print("Done with calibration!")
+    print("Done with undistorting!")
 
     return undistortedImgs
 
 
 def findInRange(hsv_img, range_hsv=[]):
-
     lowerH = (range_hsv[0][0], range_hsv[0][1])
     lowerS = (range_hsv[1][0], range_hsv[1][1])
     lowerV = (range_hsv[2][0], range_hsv[2][1])
@@ -131,7 +131,6 @@ def erosion(mask, kernel_ero):
     :param kernel_ero: The kenerl to shrink the erosion by
     :return: Returns the erosied mask
     """
-    print("Started erosion...")
 
     # Acquire size of the image
     height, width = mask.shape[0], mask.shape[1]
@@ -154,8 +153,6 @@ def erosion(mask, kernel_ero):
     else:
         warnings.warn("Kernel shape is even, it should be uneven!")
 
-    print("Done with erosion!")
-
     return imgErode
 
 
@@ -167,8 +164,6 @@ def dilation(mask, kernel_di):
     :param kernel_di: The kernel to dilate by
     :return: The dilated mask
     '''
-
-    print("Started dilating...")
 
     # Acquire size of the image
     height, width = mask.shape[0], mask.shape[1]
@@ -187,8 +182,6 @@ def dilation(mask, kernel_di):
                 imgDilate[y, x] = np.max(product)
     else:
         warnings.warn("Kernel shape is even, it should be uneven!")
-
-    print("Done with dilation!")
 
     return imgDilate
 
@@ -235,7 +228,7 @@ def grayScaling(img):
     # Go through each pixel in the image and record the intensity, then safe it for the same pixel in the image copy
     for y in range(h):
         for x in range(w):
-            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2))/3
+            I1 = (img.item(y, x, 0) + img.item(y, x, 1) + img.item(y, x, 2)) / 3
             greyscale_img1.itemset((y, x, 0), I1)
     return greyscale_img1
 
@@ -251,7 +244,7 @@ def convert_RGB_to_HSV(img):
     width, height, channel = img.shape
 
     # Get each color channel of the image
-    B, G, R = img[:, :, 0]/255, img[:, :, 1]/255, img[:, :, 2]/255
+    B, G, R = img[:, :, 0] / 255, img[:, :, 1] / 255, img[:, :, 2] / 255
 
     # Create a clone of the other image with the same height and width
     hsv_img = np.zeros(img.shape, dtype=np.uint8)
@@ -265,27 +258,27 @@ def convert_RGB_to_HSV(img):
             r, g, b = R[i][j], G[i][j], B[i][j]
 
             max_rgb, min_rgb = max(r, g, b), min(r, g, b)
-            dif_rgb = (max_rgb-min_rgb)
+            dif_rgb = (max_rgb - min_rgb)
 
             if r == g == b:
                 h = 0
             elif max_rgb == r:
-                h = ((60*(g-b))/dif_rgb)
+                h = ((60 * (g - b)) / dif_rgb)
             elif max_rgb == g:
-                h = (((60*(b-r))/dif_rgb)+120)
+                h = (((60 * (b - r)) / dif_rgb) + 120)
             elif max_rgb == b:
-                h = (((60*(r-g))/dif_rgb)+240)
+                h = (((60 * (r - g)) / dif_rgb) + 240)
             if h < 0:
-                h = h+360
+                h = h + 360
 
             # Defining Saturation
             if max_rgb == 0:
                 s = 0
             else:
-                s = ((max_rgb-min_rgb)/max_rgb)
+                s = ((max_rgb - min_rgb) / max_rgb)
 
             # Defining Value
-            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h/2, s * 255, s * 255
+            hsv_img[i][j][0], hsv_img[i][j][1], hsv_img[i][j][2] = h / 2, s * 255, s * 255
 
     return hsv_img
 
@@ -345,4 +338,3 @@ def segment_cod(images, show_images=False):
     print("Finished segmenting the cods!")
 
     return inRangeImages, segmentedImages
-

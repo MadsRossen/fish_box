@@ -1,19 +1,20 @@
+import copy
+import math
+import os
+import warnings
+
 import cv2
 import numpy as np
-import os
-import math
-import warnings
-import extremeImageProcessing as eip
-import copy
-
 from matplotlib import pyplot as plt  # --- Is this still used in final?
+
+import extremeImageProcessing as eip
 
 
 def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
     """
     Loads all the images inside a file.
 
-    :return: All the images in an array and its file names.
+    :return: All the images in a list and a list of the corresponding file names.
     """
 
     images = []
@@ -62,10 +63,10 @@ def save_img(img, save_image_path):
     if len(img) < 1:
         for n in img:
             # Count one for each image so we can name them differently and with numbers
-            count = count+1
-            cv2.imwrite(save_image_path+f"\\fish{count}.jpg", n)
+            count = count + 1
+            cv2.imwrite(save_image_path + f"\\fish{count}.jpg", n)
     else:
-        cv2.imwrite(save_image_path+"\\fish.jpg", img)
+        cv2.imwrite(save_image_path + "\\fish.jpg", img)
 
 
 def resizeImg(img, scale_percent):
@@ -117,7 +118,7 @@ def detect_woundspots(imgs, show_img=False):
     mask_woundspots = []
     segmented_woundspots_imgs = []
     marked_woundspots_imgs = []
-    booleans_woundspot = []         # List of boolean values for each image classification
+    booleans_woundspot = []  # List of boolean values for each image classification
     count = 0
     damage_percentage_array = []
 
@@ -153,8 +154,6 @@ def detect_woundspots(imgs, show_img=False):
         damage_percentage = percentage_damage(masks[count], n)
         damage_percentage_array.append(damage_percentage)
 
-        print(f"{damage_percentage}%")
-
         # From here and down in this function is not our own functions, as we use openCV to show where the detected damages are.
         # Due to time restraints we could not implement our own solution to this.
 
@@ -173,9 +172,10 @@ def detect_woundspots(imgs, show_img=False):
             if area > 0:
                 x, y, w, h = cv2.boundingRect(cont)
                 # Create tag
-                cv2.putText(marked_woundspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
+                cv2.putText(marked_woundspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255),
+                            3)
                 # Draw green contour
-                cv2.rectangle(marked_woundspots_imgs[count],(x-5,y-5),(x+w+5,y+h+5),(0,255,0), 2)
+                cv2.rectangle(marked_woundspots_imgs[count], (x - 5, y - 5), (x + w + 5, y + h + 5), (0, 255, 0), 2)
                 booleans_woundspot.append(True)
 
         count = count + 1
@@ -214,7 +214,6 @@ def open_close_trackbars():
 
 
 def morphology_operations(masks, images, open_kern_val, close_kern_val, change_kernel=False, show_img=False):
-
     """
     Uses open and close morphology on a given array of masks. Also shows the res images when the masks is combined
     with the normal images.
@@ -346,8 +345,8 @@ def contour_MOC(orig_img, contours):
         # Computing the approximate center of mass:
         # From Thomas B. Moeslund "Introduction to Video and Image Processing"
         # (Page 109 Eq: 7.3 and 7.4)
-        xcm.append(int((xmin+xmax)/2))
-        ycm.append(int((ymin+ymax)/2))
+        xcm.append(int((xmin + xmax) / 2))
+        ycm.append(int((ymin + ymax) / 2))
 
     print("Found all the contours and cropped the image!")
 
@@ -498,7 +497,7 @@ def raytracing(rotate_img, xcm, ycm, contours):
             y_delta = contours[nr][point][0][1] - ycm[nr]
             # Compute the length and angle of each coordinate in the contours.
             data[nr]["length"].append(math.sqrt(pow(x_delta, 2) + pow(y_delta, 2)))
-            data[nr]["angle"].append(math.atan2(y_delta, x_delta)*(180/math.pi))
+            data[nr]["angle"].append(math.atan2(y_delta, x_delta) * (180 / math.pi))
             # Finding the longest length and at what angle.
             if data[nr]["length"][point] > maxLength:
                 maxLength = data[nr]["length"][point]

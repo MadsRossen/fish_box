@@ -1,5 +1,6 @@
 import copy
 import os
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -367,7 +368,6 @@ def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
 
 
 def saveCDI(img_list_fish, percSpotCoverage):
-
     """
     Saves a CDI of each fish in a .txt file.
 
@@ -378,7 +378,7 @@ def saveCDI(img_list_fish, percSpotCoverage):
 
     print("Started CDI...")
 
-    f = open("CDI.txt", "w+")
+    f = open("output_CDI/CDI.txt", "w+")
 
     line = ("-----------------------------------------------------------------\n")
 

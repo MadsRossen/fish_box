@@ -1,22 +1,38 @@
+import sys
+import time
+
 import cv2
+
+import extremeImageProcessing as eip
 import functions as ft
 import functions_openCV as ftc
 import yamlLoader as yamlL
-import extremeImageProcessing as eip
-import time
-import sys
 
-# Check if the user wanna use our functions or not
+# Check if user have passed arguments
+try:
+    sys.argv[1]
+except IndexError as ie:
+    print(
+        "You need to pass arguments when running script \n \'n\' - for openCV \n \'y\' - for Group 460 built \n \'y e\'"
+        "- for Group 460 with extra non finnished functions")
+
 run_own_functions = sys.argv[1]
 experimental = 0
 
-# Does the user wanna use our own functions or OpenCV functions. y for own functions, n for openCV
+# Does the user want to use our own functions or OpenCV functions. y for own functions, n for openCV
+# Note for one cod image it takes around 420 sec
 if run_own_functions == 'y':
 
+    print("When running own built it normally takes 420 sec for 1 image")
+    print("Therefore you might want to only have one image in fish_pics/input_images")
     print("Running program with own built-in functions")
 
     # Check the runtime
     start_time = time.time()
+
+    # Create list with images showing the different main steps of the algorithm
+    stepsList = []
+    showFish = 0
 
     # First check if the software should run the experimental
     if len(sys.argv) > 2:
@@ -31,27 +47,30 @@ if run_own_functions == 'y':
 
     # load Fish images
     images, names = ft.loadImages(paths[0][1], False, False, 60)
+    stepsList.append(images[showFish])
 
     # Calibrate camera and undistort images
     fish_cali = eip.undistort(images, cali_pa[0][1], cali_pa[1][1], cali_pa[2][1], cali_pa[3][1], cali_pa[4][1],
-                              cali_pa[5][1], True)
-
-    # Save the undistorted image for further inspection
-    cv2.imwrite('fishpics/UndiImg/undi_fish.JPG', fish_cali[0])
+                              cali_pa[5][1], show_img=False)
+    stepsList.append(fish_cali[showFish])
 
     # Crop to ROI to make the processing time smaller
     cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
+    stepsList.append(cropped_images[showFish])
 
     # Threshold to create a mask for each image
     masks, segmented_images = eip.segment_cod(cropped_images, False)
 
     # Use morphology on images
     images_morph, res_images = ft.morphology_operations(masks, segmented_images, 5, 7, False, False)
+    stepsList.append(res_images[showFish])
 
     # Blood spot detection
-    masks_woundspot, _, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
+    masks_woundspot, bloodspots, marked_woundspots_imgs, _, damage_percentage = ft.detect_woundspots(res_images)
+    stepsList.append(bloodspots[showFish])
+    stepsList.append(marked_woundspots_imgs[showFish])
 
-    # CDI in a text file
+    # Save a .txt file with CDI (catch damage index)
     ftc.saveCDI(names, damage_percentage)
 
     # If the user wanna try the experimental features of the program
@@ -64,16 +83,13 @@ if run_own_functions == 'y':
 
         # Raytracing
         rot_img = ft.raytracing(cropped_images, xcm, ycm, contour)
-    else:
-        # Display the final images
-        cv2.imshow("Final segmented image", segmented_images[0])
 
-    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))
+    # Check how long it took for algorithm to finish
+    end_time = time.time()
+    print("Execution time for own version: ", "--- %s seconds ---" % (end_time - start_time))
 
-    # Display the final images
-    cv2.imshow("Final bloodspot detection", marked_woundspots_imgs[0])
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Create subplots of main steps
+    ftc.showSteps(stepsList)
 
 elif run_own_functions == "n":
 
@@ -82,6 +98,7 @@ elif run_own_functions == "n":
     # Check the runtime
     start_time = time.time()
 
+    # Create list with images showing the different main steps of the algorithm
     stepsList = []
     showFish = 0
 
@@ -103,32 +120,33 @@ elif run_own_functions == "n":
                                                  show_img=False, recalibrate=False)
     stepsList.append(fish_cali[showFish])
 
+    # Apply CLAHE
+    CLAHE = claheHSL(fish_cali, 2, (25, 25))
+    stepsList.append(CLAHE[showFish])
+
     # Crop to ROI
     cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
-    cv2.imwrite('fish_pics/segment_this.JPG', cropped_images[0])
     stepsList.append(cropped_images[showFish])
 
     # Threshold to create a mask for each image
-    mask_cod, img_segmented_cod = ftc.segment_codOPENCV(cropped_images)
-    stepsList.append(img_segmented_cod[showFish])
+    mask_cod, segmented_images = ftc.segment_codOPENCV(cropped_images)
+    stepsList.append(segmented_images[showFish])
 
     # Blood spot detection
-    mask_bloodspots, bloodspots, marked_bloodspots, \
-    percSpotCoverage = ftc.detect_bloodspotsOPENCV(img_segmented_cod, mask_cod)
+    mask_bloodspots, bloodspots, marked_woundspots_imgs, \
+    percSpotCoverage = ftc.detect_bloodspotsOPENCV(segmented_images, mask_cod)
     stepsList.append(bloodspots[showFish])
-    stepsList.append(marked_bloodspots[showFish])
+    stepsList.append(marked_woundspots_imgs[showFish])
 
     # Save marked blood spots images in folder
-    ftc.save_imgOPENCV(marked_bloodspots, 'fish_pics/output_images', img_list_fish)
+    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images', img_list_fish)
 
     # Save a .txt file with CDI (catch damage index)
     ftc.saveCDI(img_list_fish, percSpotCoverage)
 
     # Check how long it took for algorithm to finish
     end_time = time.time()
-    print('Total time for algoritm: ', end_time - start_time, 'sec')
+    print("Execution time for openCV version: ", "--- %s seconds ---" % (end_time - start_time))
 
     # Create subplots of main steps
     ftc.showSteps(stepsList)
-
-    print("Execution time: ", "--- %s seconds ---" % (time.time() - start_time))

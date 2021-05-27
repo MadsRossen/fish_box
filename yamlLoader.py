@@ -39,26 +39,22 @@ def setup_parameters(data_yaml):
     for x, y in checkerboard_dimensions_data.items():
         checkerboard_dimensions_c = [x, y]
         checkerboard_dimensions.append(checkerboard_dimensions_c)
-    print(checkerboard_dimensions)
 
     paths_data = data_yaml.get('paths')
     for fish, checkerboard_calibration in paths_data.items():
         paths_c = [fish, checkerboard_calibration]
         paths.append(paths_c)
-    print(paths)
 
     clahe_data = data_yaml.get('clahe')
     for clipLimit, tileGridSize in clahe_data.items():
         clahe_c = [clipLimit, tileGridSize]
         clahe.append(clahe_c)
-    print(clahe)
 
     cali_data = data_yaml.get('calibration_parameters')
     print(cali_data)
     for tuple1, tuple2 in cali_data.items():
         cali_c = [tuple1, tuple2]
         cali_parameters.append(cali_c)
-    print(cali_parameters)
 
     print("Done setting up the parameters!")
 

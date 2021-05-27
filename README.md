@@ -1,4 +1,29 @@
 # Fish box
+This repo features an image processing algorithm that undistorts images along with segmentation of cod and classification of damage to cod.
+
+The input is pictures of cod and the output is an image where wound on cod is marked and tagged along with a CDI (catch damage index).
+The CDI marks which image file names that contains cod with wounds.
+
+## How to use
+1. Put cod images into fish_pics/input_images.
+
+2. Select the run mode by setting the script parameters in the configurations or passing them in command line/terminal/shell. [How to pass arguments for a python script](https://www.youtube.com/watch?v=m8MkQmrJdzk) :    
+    - "n" : Run the program using only openCV functions
+    - "y" : Run the program using own built functions
+    - "y e": Run the program using own built functions, and see not yet finished version of future implementations
+
+    NOTE: when running the program using own built functions it normally takes 420 sec. for one image. Consider having only few images in fish_pics/input_images
+
+3. Recalibrate the intrinsic parameters.
+    1. Put in checkerboard images into calibration/checkerboard_pics
+    2. Run the script calibration/main_harris-corner-detection.py. A .mat file is printed in calibration/image_points_checkerboard - "image_points_for_MATLAB"
+    4. Use this .mat file in the MATLAB code GetCameraParameters.m
+
+4. The output is saved
+    1. Images for manual inspection is saved in fish_pics/output_images/manual_inspection
+    2. Images for manual inspection with CLAHE applied is saved in fish_pics/output_images/manual_inspection_CLAHE
+    3. Images where wounds are marked are saved in fish_pics/output_images/marked_images
+    4. The CDI is saved in output_CDI
 
 ## Code overview
 
