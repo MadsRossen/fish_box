@@ -44,6 +44,3 @@ The CDI marks which image file names that contains cod with wounds.
 ### Color converting
 12. [Gray scaling](link)
 13. [RGB to HSV](link)
-
-# Reference
-GitHub: [How to edit markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
