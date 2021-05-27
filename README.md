@@ -20,12 +20,7 @@ The CDI marks which image file names that contains cod with wounds.
     3. Images where wounds are marked are saved in fish_pics/output_images/marked_images
     4. The CDI is saved in output_CDI
 
-- Optional: Recalibrate the intrinsic parameters used for undistorting.
-    1. Put in checkerboard images into calibration/checkerboard_pics
-    2. Run the script calibration/main_harris-corner-detection.py. A .mat file is printed in calibration/image_points_checkerboard - "image_points_for_MATLAB"
-    4. Use this .mat file in the MATLAB code GetCameraParameters.m
-
-## Code overview
+## Reference ode overview
 
 1. [Grass fire algorithm](link)
 2. [Harris corner detection](link)
@@ -44,6 +39,3 @@ The CDI marks which image file names that contains cod with wounds.
 ### Color converting
 12. [Gray scaling](link)
 13. [RGB to HSV](link)
-
-# Reference
-GitHub: [How to edit markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
