@@ -127,6 +127,7 @@ elif run_own_functions == "n":
     # Crop to ROI
     cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
     stepsList.append(cropped_images[showFish])
+    cropped_images_CLAHE = eip.crop(CLAHE, 710, 200, 720, 2500)
 
     # Threshold to create a mask for each image
     mask_cod, segmented_images = ftc.segment_codOPENCV(cropped_images)
