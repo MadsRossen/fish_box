@@ -11,7 +11,7 @@ def blur(img):
 
     img = copy.copy(img)
 
-    kernel = np.ones(shape=(3, 3))
+    kernel = np.ones(shape=(5, 5))
 
     imgy, imgx = np.shape(img)
 
