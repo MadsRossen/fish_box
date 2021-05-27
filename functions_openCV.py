@@ -98,7 +98,7 @@ def checkerboard_calibrateOPENCV(dimensions, images_distort, images_checkerboard
     return img_undst
 
 
-def detect_bloodspotsOPENCV(imgs, maskCod):
+def detect_woundspotsOPENCV(imgs, maskCod):
     '''
     Detect bloodspots, mark and tag them and find the coverage of bloodspots on hte cod
 
@@ -107,9 +107,9 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
     :return: mask of blood spots, segmented blood spots, marked and tagged blood spots, coverage of blood spots on the
     cod
     '''
-    mask_bloodspots = []
+    mask_woundspots = []
     segmented_blodspots_imgs = []
-    marked_bloodspots_imgs = []
+    marked_woundspots_imgs = []
     percSpotCoverage = []
     count = 0
 
@@ -127,24 +127,24 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
 
         spotcount = 0
 
-        marked_bloodspots_imgs.append(copy.copy(n))
+        marked_woundspots_imgs.append(copy.copy(n))
 
         # Threshold for blood spots
         frame_threshold1 = cv2.inRange(hsv_img, (0, 90, 90), (10, 255, 255))
 
         # Combining the masks
-        mask_bloodspots.append(frame_threshold1)
+        mask_woundspots.append(frame_threshold1)
 
         # Create kernels for morphology
         kernelClose = np.ones((30, 30), np.uint8)
 
         # Perform morphology
-        close = cv2.morphologyEx(mask_bloodspots[count], cv2.MORPH_CLOSE, kernelClose)
+        close = cv2.morphologyEx(mask_woundspots[count], cv2.MORPH_CLOSE, kernelClose)
 
-        # Perform bitwise operation to show bloodspots instead of BLOBS
+        # Perform bitwise operation to show woundspots instead of BLOBS
         segmented_blodspots_imgs.append(cv2.bitwise_and(n, n, mask=close))
 
-        # Make representation of BLOB / bloodspots
+        # Make representation of BLOB / woundspots
         # Find contours
         contours, _ = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -155,10 +155,10 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
             if area > 50:
                 x, y, w, h = cv2.boundingRect(cont)
                 # Create tag
-                cv2.putText(marked_bloodspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255),
+                cv2.putText(marked_woundspots_imgs[count], 'Wound', (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255),
                             3)
                 # Draw green contour
-                cv2.rectangle(marked_bloodspots_imgs[count], (x - 5, y - 5), (x + w + 5, y + h + 5), (0, 255, 0), 2);
+                cv2.rectangle(marked_woundspots_imgs[count], (x - 5, y - 5), (x + w + 5, y + h + 5), (0, 255, 0), 2);
 
                 # Because the biologists have put a red tag on the cod, there will always be detected at least 1 blood
                 # spot
@@ -170,8 +170,7 @@ def detect_bloodspotsOPENCV(imgs, maskCod):
 
         count = count + 1
 
-    return mask_bloodspots, segmented_blodspots_imgs, marked_bloodspots_imgs, percSpotCoverage
-
+    return mask_woundspots, marked_woundspots_imgs, segmented_blodspots_imgs, percSpotCoverage
 
 def resizeImg(img, scale_percent):
     """
@@ -192,14 +191,6 @@ def resizeImg(img, scale_percent):
 
 
 def segment_codOPENCV(images, show_images=False):
-    """
-    Segments cods from the background.
-
-    :param images: An array of images of which to segment the cod from
-    :param show_images: To display the segmented cods or not
-    :return: an array of images with the cod segmented and masks of the cods
-    """
-
     print("Started segmenting the cod!")
 
     inRangeImages = []
@@ -210,7 +201,7 @@ def segment_codOPENCV(images, show_images=False):
         hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
 
         # Create threshold for segmenting cod
-        mask = cv2.inRange(hsv_img, (101, 21, 65), (180, 255, 255))
+        mask = cv2.inRange(hsv_img, (100, 21, 65), (180, 255, 255))
 
         # Invert the mask
         mask = (255 - mask)
@@ -219,14 +210,16 @@ def segment_codOPENCV(images, show_images=False):
         # kernelOpen = np.ones((4, 4), np.uint8)
         # kernelClose = np.ones((7, 7), np.uint8)
 
-        kernelOpen = np.ones((9, 9), np.uint8)
-        kernelClose = np.ones((20, 20), np.uint8)
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((5, 5), np.uint8)
 
         # Perform morphology
-        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen)
-        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose)
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen, iterations=3)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose, iterations=5)
 
         segmented_cods = cv2.bitwise_and(n, n, mask=close2)
+
+        segmented_cods[close2 == 0] = (255, 255, 255)
 
         if show_images:
             cv2.imshow("res", segmented_cods)
@@ -242,7 +235,7 @@ def segment_codOPENCV(images, show_images=False):
     return inRangeImages, segmentedImages
 
 
-def showSteps(stepsList):
+def showSteps(stepsList, CLAHE=False):
     '''
     Create subplots showing main steps in algorithm
 
@@ -253,9 +246,10 @@ def showSteps(stepsList):
     img_rgb = cv2.cvtColor(stepsList[0], cv2.COLOR_BGR2RGB)
     img_undistorted_rgb = cv2.cvtColor(stepsList[1], cv2.COLOR_BGR2RGB)
     img_cropped_rgb = cv2.cvtColor(stepsList[2], cv2.COLOR_BGR2RGB)
-    img_segmented_codrgb = cv2.cvtColor(stepsList[3], cv2.COLOR_BGR2RGB)
-    bloodspotsrgb = cv2.cvtColor(stepsList[4], cv2.COLOR_BGR2RGB)
-    marked_bloodspotssrgb = cv2.cvtColor(stepsList[5], cv2.COLOR_BGR2RGB)
+    cod_CLAHErgb = cv2.cvtColor(stepsList[3], cv2.COLOR_BGR2RGB)
+    img_segmented_codrgb = cv2.cvtColor(stepsList[4], cv2.COLOR_BGR2RGB)
+    bloodspotsrgb = cv2.cvtColor(stepsList[5], cv2.COLOR_BGR2RGB)
+    marked_bloodspotssrgb = cv2.cvtColor(stepsList[6], cv2.COLOR_BGR2RGB)
 
     fig = plt.figure()
     fig.suptitle('Steps in algorithm', fontsize=16)
@@ -272,37 +266,43 @@ def showSteps(stepsList):
     plt.imshow(img_cropped_rgb)
     plt.title('ROI')
 
-    plt.subplot(3, 3, 4)
+    if CLAHE:
+        plt.subplot(3, 3, 4)
+        plt.imshow(cod_CLAHErgb)
+        plt.title('CLAHE')
+
+    plt.subplot(3, 3, 5)
     plt.imshow(img_segmented_codrgb)
     plt.title('Segmented cod')
 
-    plt.subplot(3, 3, 5)
+    plt.subplot(3, 3, 6)
     plt.imshow(bloodspotsrgb)
     plt.title('Blood spots segmented')
 
-    plt.subplot(3, 3, 6)
+    plt.subplot(3, 3, 7)
     plt.imshow(marked_bloodspotssrgb)
     plt.title('Blood spots tagged')
 
     plt.show()
 
 
-def save_imgOPENCV(imgs, path, originPathNameList):
+def save_imgOPENCV(imgs, path, originPathNameList, img_tag=None):
     '''
     Saves a list of images in the folder that the path is set to.
 
     :param originPathName: The path of the original path of the images that have been manipulated.
     :param imgs: A list of images.
     :param path: The path that the images will be saved to.
+    :param img_tag: Tag that is is added to the original image file name e.g. filname + img_tag = filnameimg_tag.JPG
     :return: None
     '''
 
     print('Saving images')
 
     count = 0
-    if len(imgs) > 1:
+    if len(imgs) > 0:
         for n in imgs:
-            cv2.imwrite(path + f"\\{originPathNameList[count]}_marked.JPG", n)
+            cv2.imwrite(path + f"\\{originPathNameList[count] + img_tag}.JPG", n)
             count = count + 1
 
     print('Done saving images')
@@ -327,7 +327,7 @@ def crop(images, y, x, height, width):
     return cropped_images
 
 
-def loadImages(path, edit_images, show_img=False, scaling_percentage=30):
+def loadImages(path, edit_images=False, show_img=False, scaling_percentage=30):
     """
     Loads all the images inside a file.
 
@@ -405,3 +405,64 @@ def saveCDI(img_list_fish, percSpotCoverage):
     f.close()
 
     print("Done writing the CDI!")
+
+
+def segment_cod_CLAHEOPENCV(images, show_images=False):
+    print("Started segmenting the cod!")
+
+    inRangeImages = []
+    segmentedImages = []
+
+    for n in images:
+        hsv_img = copy.copy(n)
+        hsv_img = cv2.cvtColor(hsv_img, cv2.COLOR_BGR2HSV)
+
+        # Create threshold for segmenting cod
+        mask = cv2.inRange(hsv_img, (99, 15, 30), (123, 255, 255))
+
+        # Invert the mask
+        mask = (255 - mask)
+
+        # Create kernels for morphology
+        # kernelOpen = np.ones((4, 4), np.uint8)
+        # kernelClose = np.ones((7, 7), np.uint8)
+
+        kernelOpen = np.ones((3, 3), np.uint8)
+        kernelClose = np.ones((5, 5), np.uint8)
+
+        # Perform morphology
+        open1 = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernelOpen, iterations=3)
+        close2 = cv2.morphologyEx(open1, cv2.MORPH_CLOSE, kernelClose, iterations=5)
+
+        segmented_cods = cv2.bitwise_and(n, n, mask=close2)
+
+        segmented_cods[close2 == 0] = (255, 255, 255)
+
+        if show_images:
+            cv2.imshow("res", segmented_cods)
+            cv2.imshow("mask", mask)
+            cv2.waitKey(0)
+
+        # add to lists
+        inRangeImages.append(mask)
+        segmentedImages.append(segmented_cods)
+
+    print("Finished segmenting the cod!")
+
+    return inRangeImages, segmentedImages
+
+
+def claheHSL(imgList, clipLimit, tileGridSize):
+    '''
+    Performs CLAHE on a list of images
+    '''
+    fiskClaheList = []
+    for img in imgList:
+        fiskHLS2 = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+        LChannelHLS = fiskHLS2[:, :, 1]
+        clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+        claheLchannel1 = clahe.apply(LChannelHLS)
+        fiskHLS2[:, :, 1] = claheLchannel1
+        fiskClahe = cv2.cvtColor(fiskHLS2, cv2.COLOR_HLS2BGR)
+        fiskClaheList.append(fiskClahe)
+    return fiskClaheList

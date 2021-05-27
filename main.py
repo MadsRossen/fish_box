@@ -1,12 +1,11 @@
 import sys
 import time
 
-import cv2
-
 import extremeImageProcessing as eip
 import functions as ft
 import functions_openCV as ftc
 import yamlLoader as yamlL
+from functions_openCV import claheHSL
 
 # Check if user have passed arguments
 try:
@@ -46,7 +45,7 @@ if run_own_functions == 'y':
     _, paths, clahe, cali_pa = yamlL.setup_parameters(yaml_data)
 
     # load Fish images
-    images, names = ft.loadImages(paths[0][1], False, False, 60)
+    images, img_list_fish = ft.loadImages(paths[0][1], False, False, 60)
     stepsList.append(images[showFish])
 
     # Calibrate camera and undistort images
@@ -70,8 +69,17 @@ if run_own_functions == 'y':
     stepsList.append(bloodspots[showFish])
     stepsList.append(marked_woundspots_imgs[showFish])
 
+    # Save marked wounds images in folder
+    # CLAHE images
+    ftc.save_imgOPENCV(segmented_images, 'fish_pics/output_images/manual_inspection', img_list_fish,
+                       "_MANUAL_INSPECTION")
+
+    # Marked images
+    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images/marked_images', img_list_fish, "_marked")
+
+
     # Save a .txt file with CDI (catch damage index)
-    ftc.saveCDI(names, damage_percentage)
+    ftc.saveCDI(img_list_fish, damage_percentage)
 
     # If the user wanna try the experimental features of the program
     if experimental == 'e':
@@ -109,38 +117,45 @@ elif run_own_functions == "n":
     checkerboard_dimensions, paths, clahe, cali_pa = yamlL.setup_parameters(yaml_data)
 
     # Load Fish images
-    images, names, img_list_fish = ftc.loadImages(paths[0][1], False, False, 40)
+    images, img_list_fish, img_list_fish = ftc.loadImages(paths[0][1], edit_images=False,show_img=False, 40)
     stepsList.append(images[showFish])
 
     # Load checkerboard images
-    img_cali, names_cali, _ = ftc.loadImages(paths[1][1], False, False, 40)
+    img_cali, names_cali, _ = ftc.loadImages(paths[1][1], edit_images=False, show_img=False, 40)
 
     # Calibrate camera and undistort images
     fish_cali = ftc.checkerboard_calibrateOPENCV(checkerboard_dimensions, images, img_cali,
                                                  show_img=False, recalibrate=False)
     stepsList.append(fish_cali[showFish])
 
-    # Apply CLAHE
-    CLAHE = claheHSL(fish_cali, 2, (25, 25))
-    stepsList.append(CLAHE[showFish])
-
     # Crop to ROI
-    cropped_images = eip.crop(fish_cali, 710, 200, 720, 2500)
+    cropped_images = eip.crop(fish_cali, 710, 270, 850, 2600)
     stepsList.append(cropped_images[showFish])
-    cropped_images_CLAHE = eip.crop(CLAHE, 710, 200, 720, 2500)
+
+    # Apply CLAHE
+    CLAHE = claheHSL(cropped_images, 2, (25, 25))
+    stepsList.append(CLAHE[showFish])
 
     # Threshold to create a mask for each image
     mask_cod, segmented_images = ftc.segment_codOPENCV(cropped_images)
     stepsList.append(segmented_images[showFish])
+    mask_cod_CLAHE, img_segmented_cod_CLAHE = ftc.segment_cod_CLAHEOPENCV(CLAHE)
 
-    # Blood spot detection
-    mask_bloodspots, bloodspots, marked_woundspots_imgs, \
-    percSpotCoverage = ftc.detect_bloodspotsOPENCV(segmented_images, mask_cod)
-    stepsList.append(bloodspots[showFish])
+    # Wound detection
+    mask_bloodspots, marked_woundspots_imgs, wounds , \
+    percSpotCoverage = ftc.detect_woundspotsOPENCV(segmented_images, mask_cod)
+    stepsList.append(wounds[showFish])
     stepsList.append(marked_woundspots_imgs[showFish])
 
-    # Save marked blood spots images in folder
-    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images', img_list_fish)
+    # Save marked wounds images in folder
+    # CLAHE images
+    ftc.save_imgOPENCV(segmented_images, 'fish_pics/output_images/manual_inspection', img_list_fish,
+                       "_MANUAL_INSPECTION")
+    # CLAHE images
+    ftc.save_imgOPENCV(img_segmented_cod_CLAHE, 'fish_pics/output_images/manual_inspection_CLAHE', img_list_fish,
+                       "_MANUAL_INSPECTION_CLAHE")
+    # Marked images
+    ftc.save_imgOPENCV(marked_woundspots_imgs, 'fish_pics/output_images/marked_images', img_list_fish, "_marked")
 
     # Save a .txt file with CDI (catch damage index)
     ftc.saveCDI(img_list_fish, percSpotCoverage)
@@ -150,4 +165,4 @@ elif run_own_functions == "n":
     print("Execution time for openCV version: ", "--- %s seconds ---" % (end_time - start_time))
 
     # Create subplots of main steps
-    ftc.showSteps(stepsList)
+    ftc.showSteps(stepsList, CLAHE=True)
