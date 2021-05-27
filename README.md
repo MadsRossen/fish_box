@@ -25,7 +25,7 @@ The CDI marks which image file names that contains cod with wounds.
     3. Images where wounds are marked are saved in fish_pics/output_images/marked_images
     4. The CDI is saved in output_CDI
 
-## Code overview
+## Reference ode overview
 
 1. [Grass fire algorithm](link)
 2. [Harris corner detection](link)
