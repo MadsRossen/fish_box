@@ -19,7 +19,15 @@ The CDI marks which image file names that contains cod with wounds.
     2. Images for manual inspection with CLAHE applied is saved in fish_pics/output_images/manual_inspection_CLAHE
     3. Images where wounds are marked are saved in fish_pics/output_images/marked_images
     4. The CDI is saved in output_CDI
-
+    
+- Optional: run recalibration of intrinsic parameters for undistortion:
+    1. Put checkerboard images into calibration/checkerboard_pics
+    1. Run the python script calibration/main_harris-corner-detection.py. A .mat file is generated - 
+    "calibration/image_points_checkerboard/image_points_for_MATLAB.mat"
+    2. Run the MATLAB script calibration/GetCameraParameters.m that uses the .mat file generated from previous step. 
+    The script generates the parametres k_1, k_2, imgCenterX, imgCenterY, Fx and Fy, that is py into parameters.yaml.
+    The intrinsic parameters are now calibrated
+    
 ## Reference to algorithms and math used in code
 
 1. [Grass fire algorithm](link)
